@@ -1,0 +1,4 @@
+LifeSimulatorGame/Models* filter=lfs diff=lfs merge=lfs -text
+LifeSimulatorGame/Models/* filter=lfs diff=lfs merge=lfs -text
+LifeSimulatorGame/Textures/* filter=lfs diff=lfs merge=lfs -text
+LifeSimulatorGame/Fonts/* filter=lfs diff=lfs merge=lfs -text
