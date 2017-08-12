@@ -1,4 +1,4 @@
-#include "Environment.h"
+#include "VulkanTerrain.h"
 #include "VulkanDevice.h"
 
 #include "VulkanInitializers.h"
@@ -15,35 +15,68 @@
 #include "Camera.h"
 #include "Mesh.h"
 #include "VulkanTextureCreateInfo.h"
+#include "PerlinNoise.h"
 
-void FEnvironment::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue queue)
+void FVulkanTerrain::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue queue)
 {
-	FVulkanTextureCreateInfo textureCreateInfo = {};
-	textureCreateInfo.filename = TEXTURE_PATH;
-	textureCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-	textureCreateInfo.Create(vulkanDevice, commandPool, queue, texture);
+	PerlinNoise Noise;
+
+	const int numberOfQuads = 16;
+	const int numberOfVertices = 17;
+
+	for (int x = 0; x < numberOfVertices; x++)
+	{
+		for (int y = 0; y < numberOfVertices; y++)
+		{
+			float height = Noise.noise((float) x/ numberOfVertices, float(y)/ numberOfVertices);
+
+			FTerrainVertex Vertex;
+			Vertex.pos = { x - numberOfQuads/2, y - numberOfQuads / 2, height };
+			vertices.push_back(Vertex);
+		}
+	}
+
+	for (int x = 0; x < numberOfQuads; x++)
+	{
+		for (int y = 0; y < numberOfQuads; y++)
+		{
+			int startIndex = x * numberOfVertices + y;
+
+			indices.push_back(startIndex + 0);
+			indices.push_back(startIndex + 0 + numberOfVertices);
+			indices.push_back(startIndex + 1);
+
+			indices.push_back(startIndex + 0 + numberOfVertices);
+			indices.push_back(startIndex + 1 + numberOfVertices);
+			indices.push_back(startIndex + 1);
+		}
+	}
+
+	//vertices = {
+	//	{ { -5, -5, 0.0f } },
+	//	{ { -5, 5, 0.0f } },
+	//	{ { 5, -5, 0.0f } },
+	//	{ { 5, 5, 0.0f } },
+	//};
+	//indices = { 0, 2, 1, 2, 3, 1 };
 }
 
-void FEnvironment::Destroy(FVulkanDevice vulkanDevice)
-{
-	texture.Destroy(vulkanDevice);
-}
 
-void FEnvironment::DestroyBuffers(FVulkanDevice vulkanDevice)
+void FVulkanTerrain::DestroyBuffers(FVulkanDevice vulkanDevice)
 {
 	uniformBuffer.Destroy(vulkanDevice.logicalDevice);
 	indexBuffer.Destroy(vulkanDevice.logicalDevice);
 	vertexBuffer.Destroy(vulkanDevice.logicalDevice);
 
 }
-void FEnvironment::PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCreateInfo* pipelineInfo)
+void FVulkanTerrain::PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCreateInfo* pipelineInfo)
 {
 	pipelineInfo->pInputAssemblyState = CreatePipelineInputAssemblyStateCreateInfo();
 	pipelineInfo->pDepthStencilState = CreatePipelineDepthStencilStateCreateInfo();
 	pipelineInfo->pColorBlendState = CreatePipelineColorBlendStateCreateInfo();
 
-	auto vertShaderCode = FFileCalculator::ReadFile("shaders/model.vert.spv");
-	auto fragShaderCode = FFileCalculator::ReadFile("shaders/model.frag.spv");
+	auto vertShaderCode = FFileCalculator::ReadFile("shaders/terrain.vert.spv");
+	auto fragShaderCode = FFileCalculator::ReadFile("shaders/terrain.frag.spv");
 
 	VkShaderModule vertShaderModule = FShaderCalculator::CreateShaderModule(logicalDevice, vertShaderCode);
 	VkShaderModule fragShaderModule = FShaderCalculator::CreateShaderModule(logicalDevice, fragShaderCode);
@@ -62,15 +95,15 @@ void FEnvironment::PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCre
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 	shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
-	auto vertexBindingDescription = FVertex::GetVertexBindingDescription();
-	auto vertexAttributeDescriptions = FVertex::GetVertexAttributeDescriptions();
+	auto vertexBindingDescription = FTerrainVertex::GetVertexBindingDescription();
+	auto vertexAttributeDescriptions = FTerrainVertex::GetVertexAttributeDescriptions();
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = FVulkanInitializers::PipelineVertexInputStateCreateInfo();
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &vertexBindingDescription;
 	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributeDescriptions.size());
 	vertexInputInfo.pVertexAttributeDescriptions = vertexAttributeDescriptions.data();
-	
+
 	pipelineInfo->stageCount = 2;
 	pipelineInfo->pStages = shaderStages.data();
 	pipelineInfo->pVertexInputState = &vertexInputInfo;
@@ -82,14 +115,14 @@ void FEnvironment::PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCre
 
 	vkDestroyShaderModule(logicalDevice, vertShaderModule, nullptr);
 	vkDestroyShaderModule(logicalDevice, fragShaderModule, nullptr);
-	
+
 	delete pipelineInfo->pInputAssemblyState;
 	delete pipelineInfo->pDepthStencilState;
 	delete pipelineInfo->pColorBlendState->pAttachments;
 	delete pipelineInfo->pColorBlendState;
 }
 
-void FEnvironment::CreateDescriptorSets(VkDevice logicalDevice, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool)
+void FVulkanTerrain::CreateDescriptorSets(VkDevice logicalDevice, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool)
 {
 	VkDescriptorSetLayout layouts[] = { descriptorSetLayout };
 	VkDescriptorSetAllocateInfo allocInfo = FVulkanInitializers::DescriptorSetAllocateInfo();
@@ -107,12 +140,7 @@ void FEnvironment::CreateDescriptorSets(VkDevice logicalDevice, VkDescriptorSetL
 	bufferInfo.offset = 0;
 	bufferInfo.range = sizeof(FUniformBufferObject);
 
-	VkDescriptorImageInfo imageInfo = {};
-	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = texture.imageView;
-	imageInfo.sampler = texture.sampler;
-
-	std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
+	std::array<VkWriteDescriptorSet, 1> descriptorWrites = {};
 	descriptorWrites[0] = FVulkanInitializers::WriteDescriptorSet();
 	descriptorWrites[0].dstSet = descriptorSet;
 	descriptorWrites[0].dstBinding = 0;
@@ -121,18 +149,10 @@ void FEnvironment::CreateDescriptorSets(VkDevice logicalDevice, VkDescriptorSetL
 	descriptorWrites[0].descriptorCount = 1;
 	descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-	descriptorWrites[1] = FVulkanInitializers::WriteDescriptorSet();
-	descriptorWrites[1].dstSet = descriptorSet;
-	descriptorWrites[1].dstBinding = 1;
-	descriptorWrites[1].dstArrayElement = 0;
-	descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorWrites[1].descriptorCount = 1;
-	descriptorWrites[1].pImageInfo = &imageInfo;
-
 	vkUpdateDescriptorSets(logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
-void FEnvironment::CreateUniformBuffer(FVulkanDevice vulkanDevice)
+void FVulkanTerrain::CreateUniformBuffer(FVulkanDevice vulkanDevice)
 {
 	VkDeviceSize bufferSize = sizeof(FUniformBufferObject);
 	VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -140,19 +160,11 @@ void FEnvironment::CreateUniformBuffer(FVulkanDevice vulkanDevice)
 	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, uniformBuffer.buffer, uniformBuffer.bufferMemory);
 }
 
-void FEnvironment::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
+void FVulkanTerrain::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
 {
-	//static auto startTime = std::chrono::high_resolution_clock::now();
-
-	//auto currentTime = std::chrono::high_resolution_clock::now();
-	//float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
-
 	FUniformBufferObject uniformBufferObject = {};
 	uniformBufferObject.model = glm::mat4();
-	//uniformBufferObject.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	//uniformBufferObject.model = glm::rotate(glm::mat4(), startFrameTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	//uniformBufferObject.model = glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	
+
 	uniformBufferObject.view = scene->camera->view;
 	uniformBufferObject.proj = scene->camera->proj;
 	uniformBufferObject.proj[1][1] *= -1;
@@ -163,77 +175,72 @@ void FEnvironment::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
 	vkUnmapMemory(logicalDevice, uniformBuffer.bufferMemory);
 }
 
-void FEnvironment::BuildCommandBuffers(VkCommandBuffer commandBuffer, FScene* scene, VkPipelineLayout pipelineLayout)
+void FVulkanTerrain::BuildCommandBuffers(VkCommandBuffer commandBuffer, FScene* scene, VkPipelineLayout pipelineLayout)
 {
 	VkDeviceSize offsets[] = { 0 };
 
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(scene->mesh->indices.size()), 1, 0, 0, 0);
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
-void FEnvironment::CreateBuffers(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+void FVulkanTerrain::CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	CreateVertexBuffer(scene, vulkanDevice, commandPool, graphicsQueue);
-	CreateIndexBuffer(scene, vulkanDevice, commandPool, graphicsQueue);
+	CreateVertexBuffer(vulkanDevice, commandPool, graphicsQueue);
+	CreateIndexBuffer(vulkanDevice, commandPool, graphicsQueue);
 	CreateUniformBuffer(vulkanDevice);
 }
 
-void FEnvironment::CreateVertexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+void FVulkanTerrain::CreateVertexBuffer(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	FMesh* mesh = scene->mesh;
-	VkDeviceSize bufferSize = sizeof(mesh->vertices[0]) * mesh->vertices.size();
+	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
+
+	FVulkanBuffer stagingBuffer;
 	VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	VkMemoryPropertyFlags stagingMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, stagingBufferUsageFlags, stagingMemoryPropertyFlags, stagingBuffer, stagingBufferMemory);
+	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, stagingBufferUsageFlags, stagingMemoryPropertyFlags, stagingBuffer.buffer, stagingBuffer.bufferMemory);
 
 	void* data;
-	vkMapMemory(vulkanDevice.logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, mesh->vertices.data(), (size_t)bufferSize);
-	vkUnmapMemory(vulkanDevice.logicalDevice, stagingBufferMemory);
+	vkMapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, vertices.data(), (size_t)bufferSize);
+	vkUnmapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory);
 
 	VkBufferUsageFlags vertexBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	VkMemoryPropertyFlags vertexMemoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, vertexBufferUsageFlags, vertexMemoryPropertyFlags, vertexBuffer.buffer, vertexBuffer.bufferMemory);
 
-	FVulkanBufferCalculator::CopyBuffer(vulkanDevice.logicalDevice, commandPool, graphicsQueue, stagingBuffer, vertexBuffer.buffer, bufferSize);
+	FVulkanBufferCalculator::CopyBuffer(vulkanDevice.logicalDevice, commandPool, graphicsQueue, stagingBuffer.buffer, vertexBuffer.buffer, bufferSize);
 
-	vkDestroyBuffer(vulkanDevice.logicalDevice, stagingBuffer, nullptr);
-	vkFreeMemory(vulkanDevice.logicalDevice, stagingBufferMemory, nullptr);
+	stagingBuffer.Destroy(vulkanDevice.logicalDevice);
 }
 
-void FEnvironment::CreateIndexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+void FVulkanTerrain::CreateIndexBuffer(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	FMesh* mesh = scene->mesh;
-	VkDeviceSize bufferSize = sizeof(mesh->indices[0]) * mesh->indices.size();
+	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
+	FVulkanBuffer stagingBuffer;
 	VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	VkMemoryPropertyFlags stagingMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, stagingBufferUsageFlags, stagingMemoryPropertyFlags, stagingBuffer, stagingBufferMemory);
+	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, stagingBufferUsageFlags, stagingMemoryPropertyFlags, stagingBuffer.buffer, stagingBuffer.bufferMemory);
 
 	void* data;
-	vkMapMemory(vulkanDevice.logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, mesh->indices.data(), (size_t)bufferSize);
-	vkUnmapMemory(vulkanDevice.logicalDevice, stagingBufferMemory);
+	vkMapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, indices.data(), (size_t)bufferSize);
+	vkUnmapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory);
 
 	VkBufferUsageFlags indexBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 	VkMemoryPropertyFlags indexMemoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, indexBufferUsageFlags, indexMemoryPropertyFlags, indexBuffer.buffer, indexBuffer.bufferMemory);
 
-	FVulkanBufferCalculator::CopyBuffer(vulkanDevice.logicalDevice, commandPool, graphicsQueue, stagingBuffer, indexBuffer.buffer, bufferSize);
+	FVulkanBufferCalculator::CopyBuffer(vulkanDevice.logicalDevice, commandPool, graphicsQueue, stagingBuffer.buffer, indexBuffer.buffer, bufferSize);
 
-	vkDestroyBuffer(vulkanDevice.logicalDevice, stagingBuffer, nullptr);
-	vkFreeMemory(vulkanDevice.logicalDevice, stagingBufferMemory, nullptr);
+	stagingBuffer.Destroy(vulkanDevice.logicalDevice);
 }
 
-VkPipelineInputAssemblyStateCreateInfo* FEnvironment::CreatePipelineInputAssemblyStateCreateInfo()
+VkPipelineInputAssemblyStateCreateInfo* FVulkanTerrain::CreatePipelineInputAssemblyStateCreateInfo()
 {
 	VkPipelineInputAssemblyStateCreateInfo* inputAssembly = new VkPipelineInputAssemblyStateCreateInfo();
 	inputAssembly->sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -242,7 +249,7 @@ VkPipelineInputAssemblyStateCreateInfo* FEnvironment::CreatePipelineInputAssembl
 	return inputAssembly;
 }
 
-VkPipelineColorBlendStateCreateInfo* FEnvironment::CreatePipelineColorBlendStateCreateInfo()
+VkPipelineColorBlendStateCreateInfo* FVulkanTerrain::CreatePipelineColorBlendStateCreateInfo()
 {
 	VkPipelineColorBlendAttachmentState* colorBlendAttachment = new VkPipelineColorBlendAttachmentState();
 	colorBlendAttachment->colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -267,7 +274,7 @@ VkPipelineColorBlendStateCreateInfo* FEnvironment::CreatePipelineColorBlendState
 	return colorBlending;
 }
 
-VkPipelineDepthStencilStateCreateInfo* FEnvironment::CreatePipelineDepthStencilStateCreateInfo()
+VkPipelineDepthStencilStateCreateInfo* FVulkanTerrain::CreatePipelineDepthStencilStateCreateInfo()
 {
 	VkPipelineDepthStencilStateCreateInfo* depthStencil = new VkPipelineDepthStencilStateCreateInfo();
 	depthStencil->sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;

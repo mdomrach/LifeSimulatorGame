@@ -111,24 +111,18 @@
     <ClCompile Include="Particle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VulkanTerrain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TerrainVertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="MakeFile">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Shaders\compile.bat">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\frag.spv">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\shader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\shader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\vert.spv">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Fonts\stb_font_consolas_24_latin1.inl">
@@ -144,6 +138,12 @@
     <None Include="Shaders\particle.frag.spv" />
     <None Include="Shaders\particle.vert" />
     <None Include="Shaders\particle.vert.spv" />
+    <None Include="Shaders\model.frag" />
+    <None Include="Shaders\model.frag.spv" />
+    <None Include="Shaders\model.vert" />
+    <None Include="Shaders\model.vert.spv" />
+    <None Include="Shaders\terrain.frag" />
+    <None Include="Shaders\terrain.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="QueueFamilyIndices.h">
@@ -252,6 +252,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UniformBufferObjectParticle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HeightMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanTerrain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TerrainVertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PerlinNoise.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

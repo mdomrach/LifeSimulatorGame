@@ -9,6 +9,7 @@
 #include "VulkanDevice.h"
 #include "Environment.h"
 #include "ParticleFire.h"
+#include "VulkanTerrain.h"
 
 class FScene;
 class FInputManager;
@@ -71,6 +72,7 @@ public:
 
 	FEnvironment environment;
 	FParticleFire particleFire;
+	FVulkanTerrain terrain;
 
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;

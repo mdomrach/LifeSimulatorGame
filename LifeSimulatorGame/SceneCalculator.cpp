@@ -13,22 +13,7 @@ void FSceneCalculator::LoadScene(FScene* scene, int width, int height)
 {
 	scene->mesh = LoadMesh();
 	scene->camera = LoadCamera(width, height);
-	scene->terrain = LoadTerrain();
-}
-
-FMesh* FSceneCalculator::LoadTerrain()
-{
-	auto mesh = new FMesh();
-
-	mesh->vertices = {
-		{ { -5, -5, 0.0f },{ 1.0f, 0.0f, 0.0f },{ 0.0f, 0.0f } },
-		{ { 5, -5, 0.0f },{ 0.0f, 1.0f, 0.0f },{ 1.0f, 0.0f } },
-		{ { 5, 5, 0.0f },{ 0.0f, 0.0f, 1.0f },{ 1.0f, 1.0f } },
-		{ { -5, 5, 0.0f },{ 1.0f, 1.0f, 1.0f },{ 0.0f, 1.0f } }
-	};
-	mesh->indices = { 0, 1, 2, 2, 3, 0 };
-	
-	return mesh;
+	//scene->terrain = LoadTerrain();
 }
 
 FMesh* FSceneCalculator::LoadMesh()

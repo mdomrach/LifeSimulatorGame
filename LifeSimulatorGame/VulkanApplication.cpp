@@ -95,6 +95,7 @@ void FVulkanApplication::LoadScene()
 {
 	environment.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
 	particleFire.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
+	terrain.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
 	FSceneCalculator::LoadScene(scene, swapChain.extent.width, swapChain.extent.height);
 }
 
@@ -102,10 +103,12 @@ void FVulkanApplication::PrepareToDisplayScene()
 {
 	environment.CreateBuffers(scene, vulkanDevice, commandPool, graphicsQueue);
 	particleFire.CreateBuffers(vulkanDevice);
+	terrain.CreateBuffers(vulkanDevice, commandPool, graphicsQueue);
 	CreateDescriptorPool();
 
 	environment.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
 	particleFire.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
+	terrain.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
 	CreateCommandBuffers();
 	BuildCommandBuffers();
 	PrepareTextOverlay();
@@ -250,6 +253,7 @@ void FVulkanApplication::CleanupSwapChain()
 
 	vkDestroyPipeline(vulkanDevice.logicalDevice, environment.graphicsPipeline, nullptr);
 	vkDestroyPipeline(vulkanDevice.logicalDevice, particleFire.graphicsPipeline, nullptr);
+	vkDestroyPipeline(vulkanDevice.logicalDevice, terrain.graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(vulkanDevice.logicalDevice, pipelineLayout, nullptr);
 	vkDestroyRenderPass(vulkanDevice.logicalDevice, renderPass, nullptr);
 	for (size_t i = 0; i < swapChain.imageCount; i++)
@@ -272,6 +276,7 @@ void FVulkanApplication::Cleanup()
 
 	environment.DestroyBuffers(vulkanDevice);
 	particleFire.DestroyBuffers(vulkanDevice);
+	terrain.DestroyBuffers(vulkanDevice);
 
 	vkDestroySemaphore(vulkanDevice.logicalDevice, renderFinishedSemaphore, nullptr);
 	vkDestroySemaphore(vulkanDevice.logicalDevice, imageAvailableSemaphore, nullptr);
@@ -511,6 +516,7 @@ void FVulkanApplication::CreateGraphicsPipeline()
 
 	environment.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
 	particleFire.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
+	terrain.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
 
 	FVulkanPipelineCalculator::DeleteGraphicsPipelineInfo(pipelineInfo);
 }
@@ -571,6 +577,7 @@ void FVulkanApplication::BuildCommandBuffers()
 
 		environment.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
 		particleFire.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
+		terrain.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -706,20 +713,21 @@ void FVulkanApplication::UpdateUniformBuffer()
 	environment.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
 	particleFire.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
 	particleFire.UpdateParticles();
+	terrain.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
 }
 
 void FVulkanApplication::CreateDescriptorPool()
 {
 	std::array<VkDescriptorPoolSize, 2> descriptorPoolSizes = {};
 	descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorPoolSizes[0].descriptorCount = 2;
+	descriptorPoolSizes[0].descriptorCount = 3;
 	descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorPoolSizes[1].descriptorCount = 4;
+	descriptorPoolSizes[1].descriptorCount = 6;
 
 	VkDescriptorPoolCreateInfo descriptorPoolInfo = FVulkanInitializers::DescriptorPoolCreateInfo();
 	descriptorPoolInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
 	descriptorPoolInfo.pPoolSizes = descriptorPoolSizes.data();
-	descriptorPoolInfo.maxSets = 2;
+	descriptorPoolInfo.maxSets = 3;
 
 	if (vkCreateDescriptorPool(vulkanDevice.logicalDevice, &descriptorPoolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
 	{
