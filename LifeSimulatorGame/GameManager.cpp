@@ -7,6 +7,8 @@
 #include "SleepCalculator.h"
 #include "VulkanDevice.h"
 #include "CameraController.h"
+#include "TerrainEditor.h"
+#include "Terrain.h"
 
 FGameManager::FGameManager()
 {
@@ -15,12 +17,15 @@ FGameManager::FGameManager()
 	vulkanApplication = new FVulkanApplication();
 	timeManager = new FTimeManager();
 	cameraController = new FCameraController();
+	terrainEditor = new FTerrainEditor();
+	terrain = new FTerrain();
 
 	vulkanApplication->Initialize(this);
 	vulkanApplication->InitializeVulkan();
 
 	inputManager->Initialize(this);
 	cameraController->Initialize(this);
+	terrainEditor->Initialize(this);
 }
 
 void FGameManager::Run()
@@ -38,6 +43,7 @@ void FGameManager::MainLoop()
 		timeManager->UpdateTime();
 		inputManager->ProcessInput();
 		cameraController->ProcessInput();
+		terrainEditor->ProcessInput();
 
 		vulkanApplication->UpdateUniformBuffer();
 		vulkanApplication->DrawFrame();

@@ -11,7 +11,7 @@
 
 void FSceneCalculator::LoadScene(FScene* scene, int width, int height)
 {
-	scene->mesh = LoadMesh();
+	//scene->mesh = LoadMesh();
 	scene->camera = LoadCamera(width, height);
 	//scene->terrain = LoadTerrain();
 }

@@ -5,6 +5,8 @@ class FInputManager;
 class FVulkanApplication;
 class FTimeManager;
 class FCameraController;
+class FTerrainEditor;
+class FTerrain;
 
 class FGameManager
 {
@@ -14,6 +16,8 @@ public:
 	FVulkanApplication* vulkanApplication;
 	FTimeManager* timeManager;
 	FCameraController* cameraController;
+	FTerrainEditor* terrainEditor;
+	FTerrain* terrain;
 
 	FGameManager();
 	

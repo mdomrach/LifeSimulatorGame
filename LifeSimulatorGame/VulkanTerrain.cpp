@@ -18,10 +18,12 @@
 #include "PerlinNoise.h"
 #include "GameManager.h"
 #include "TimeManager.h"
+#include "Terrain.h"
 
 void FVulkanTerrain::Initialize(FGameManager* gameManager)
 {
 	timeManager = gameManager->timeManager;
+	terrain = gameManager->terrain;
 }
 
 void FVulkanTerrain::LoadAssets()
@@ -40,7 +42,7 @@ void FVulkanTerrain::LoadAssets()
 			FTerrainVertex Vertex;
 			Vertex.pos = { x - numberOfQuads/2, y - numberOfQuads / 2, height };
 			Vertex.normal = glm::vec3(0, 0, 1);
-			vertices.push_back(Vertex);
+			terrain->vertices.push_back(Vertex);
 		}
 	}
 	
@@ -49,21 +51,21 @@ void FVulkanTerrain::LoadAssets()
 		for (int y = 1; y < numberOfVertices - 1; y++)
 		{
 			int index11 = GetVertexIndex(x + 0, y + 0);
-			glm::vec3 height11 = vertices[index11].pos;
+			glm::vec3 height11 = terrain->vertices[index11].pos;
 
 			int index01 = GetVertexIndex(x - 1, y + 0);
 			int index10 = GetVertexIndex(x + 0, y - 1);
 			int index21 = GetVertexIndex(x + 1, y + 0);
 			int index12 = GetVertexIndex(x + 0, y + 1);
 
-			glm::vec3 height01 = vertices[index01].pos;
-			glm::vec3 height21 = vertices[index21].pos;
-			glm::vec3 height10 = vertices[index10].pos;
-			glm::vec3 height12 = vertices[index12].pos;
+			glm::vec3 height01 = terrain->vertices[index01].pos;
+			glm::vec3 height21 = terrain->vertices[index21].pos;
+			glm::vec3 height10 = terrain->vertices[index10].pos;
+			glm::vec3 height12 = terrain->vertices[index12].pos;
 
 			glm::vec3 normal1 = glm::cross(height01 - height11, height10 - height11);
 			glm::vec3 normal2 = glm::cross(height21 - height11, height12 - height11);
-			vertices[index11].normal = normal1 + normal2;
+			terrain->vertices[index11].normal = normal1 + normal2;
 		}
 	}
 
@@ -76,13 +78,13 @@ void FVulkanTerrain::LoadAssets()
 			int index10 = GetVertexIndex(x + 1, y + 0);
 			int index11 = GetVertexIndex(x + 1, y + 1);
 
-			indices.push_back(index00);
-			indices.push_back(index10);
-			indices.push_back(index01);
+			terrain->indices.push_back(index00);
+			terrain->indices.push_back(index10);
+			terrain->indices.push_back(index01);
 
-			indices.push_back(index10);
-			indices.push_back(index11);
-			indices.push_back(index01);
+			terrain->indices.push_back(index10);
+			terrain->indices.push_back(index11);
+			terrain->indices.push_back(index01);
 		}
 	}
 }
@@ -189,7 +191,12 @@ void FVulkanTerrain::CreateUniformBuffer(FVulkanDevice vulkanDevice)
 void FVulkanTerrain::UpdateFrame(VkDevice logicalDevice, FScene* scene)
 {
 	UpdateUniformBuffer(logicalDevice, scene);
-	UpdateVertexBuffer();
+	//UpdateVertexBuffer();
+
+	UpdateNormals();
+	size_t size = sizeof(terrain->vertices[0]) * terrain->vertices.size();
+	memcpy(verticesMemory, terrain->vertices.data(), size);
+
 	//UpdateIndexBuffer();
 }
 
@@ -216,7 +223,7 @@ void FVulkanTerrain::BuildCommandBuffers(VkCommandBuffer commandBuffer, FScene* 
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(terrain->indices.size()), 1, 0, 0, 0);
 }
 
 void FVulkanTerrain::CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
@@ -228,7 +235,7 @@ void FVulkanTerrain::CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool com
 
 void FVulkanTerrain::CreateVertexBuffer(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	VkDeviceSize bufferSize = sizeof(terrain->vertices[0]) * terrain->vertices.size();
 	
 	FVulkanBuffer stagingBuffer;
 	VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -237,7 +244,7 @@ void FVulkanTerrain::CreateVertexBuffer(FVulkanDevice vulkanDevice, VkCommandPoo
 
 	void* data;
 	vkMapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), (size_t)bufferSize);
+	memcpy(data, terrain->vertices.data(), (size_t)bufferSize);
 	vkUnmapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory);
 
 	VkBufferUsageFlags vertexBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -251,7 +258,7 @@ void FVulkanTerrain::CreateVertexBuffer(FVulkanDevice vulkanDevice, VkCommandPoo
 
 void FVulkanTerrain::CreateIndexBuffer(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+	VkDeviceSize bufferSize = sizeof(terrain->indices[0]) * terrain->indices.size();
 
 	FVulkanBuffer stagingBuffer;
 	VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -260,7 +267,7 @@ void FVulkanTerrain::CreateIndexBuffer(FVulkanDevice vulkanDevice, VkCommandPool
 
 	void* data;
 	vkMapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, indices.data(), (size_t)bufferSize);
+	memcpy(data, terrain->indices.data(), (size_t)bufferSize);
 	vkUnmapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory);
 
 	VkBufferUsageFlags indexBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
@@ -274,7 +281,7 @@ void FVulkanTerrain::CreateIndexBuffer(FVulkanDevice vulkanDevice, VkCommandPool
 
 void FVulkanTerrain::CreateVertexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	VkDeviceSize bufferSize = sizeof(terrain->vertices[0]) * terrain->vertices.size();
 	VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, vertexBuffer.buffer, vertexBuffer.bufferMemory);
@@ -289,7 +296,7 @@ void FVulkanTerrain::CreateVertexBuffer2(FVulkanDevice vulkanDevice, VkCommandPo
 
 void FVulkanTerrain::CreateIndexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+	VkDeviceSize bufferSize = sizeof(terrain->indices[0]) * terrain->indices.size();
 	VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, indexBuffer.buffer, indexBuffer.bufferMemory);
@@ -315,37 +322,42 @@ void FVulkanTerrain::UpdateVertexBuffer()
 		{
 			float height = noiseAmplitude * Noise.noise((x+ offset) * noiseFrequency, y * noiseFrequency);
 
-			vertices[i].pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };
-			vertices[i].normal = glm::vec3(0, 0, 1);
+			terrain->vertices[i].pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };
+			terrain->vertices[i].normal = glm::vec3(0, 0, 1);
 			i++;
 		}
 	}
 
+	UpdateNormals();
+
+	size_t size = sizeof(terrain->vertices[0]) * terrain->vertices.size();
+	memcpy(verticesMemory, terrain->vertices.data(), size);
+}
+
+void FVulkanTerrain::UpdateNormals()
+{
 	for (int x = 1; x < numberOfVertices - 1; x++)
 	{
 		for (int y = 1; y < numberOfVertices - 1; y++)
 		{
 			int index11 = GetVertexIndex(x + 0, y + 0);
-			glm::vec3 height11 = vertices[index11].pos;
+			glm::vec3 height11 = terrain->vertices[index11].pos;
 
 			int index01 = GetVertexIndex(x - 1, y + 0);
 			int index10 = GetVertexIndex(x + 0, y - 1);
 			int index21 = GetVertexIndex(x + 1, y + 0);
 			int index12 = GetVertexIndex(x + 0, y + 1);
 
-			glm::vec3 height01 = vertices[index01].pos;
-			glm::vec3 height21 = vertices[index21].pos;
-			glm::vec3 height10 = vertices[index10].pos;
-			glm::vec3 height12 = vertices[index12].pos;
+			glm::vec3 height01 = terrain->vertices[index01].pos;
+			glm::vec3 height21 = terrain->vertices[index21].pos;
+			glm::vec3 height10 = terrain->vertices[index10].pos;
+			glm::vec3 height12 = terrain->vertices[index12].pos;
 
 			glm::vec3 normal1 = glm::cross(height01 - height11, height10 - height11);
 			glm::vec3 normal2 = glm::cross(height21 - height11, height12 - height11);
-			vertices[index11].normal = normal1 + normal2;
+			terrain->vertices[index11].normal = normal1 + normal2;
 		}
 	}
-
-	size_t size = sizeof(vertices[0]) * vertices.size();
-	memcpy(verticesMemory, vertices.data(), size);
 }
 
 void FVulkanTerrain::UpdateIndexBuffer()
@@ -360,18 +372,18 @@ void FVulkanTerrain::UpdateIndexBuffer()
 			int index10 = GetVertexIndex(x + 1, y + 0);
 			int index11 = GetVertexIndex(x + 1, y + 1);
 
-			indices[i++] = index00;
-			indices[i++] = index10;
-			indices[i++] = index01;
+			terrain->indices[i++] = index00;
+			terrain->indices[i++] = index10;
+			terrain->indices[i++] = index01;
 
-			indices[i++] = index10;
-			indices[i++] = index11;
-			indices[i++] = index01;
+			terrain->indices[i++] = index10;
+			terrain->indices[i++] = index11;
+			terrain->indices[i++] = index01;
 		}
 	}
 
-	size_t size = sizeof(indices[0]) * indices.size();
-	memcpy(indicesMemory, indices.data(), size);
+	size_t size = sizeof(terrain->indices[0]) * terrain->indices.size();
+	memcpy(indicesMemory, terrain->indices.data(), size);
 }
 
 VkPipelineInputAssemblyStateCreateInfo* FVulkanTerrain::CreatePipelineInputAssemblyStateCreateInfo()

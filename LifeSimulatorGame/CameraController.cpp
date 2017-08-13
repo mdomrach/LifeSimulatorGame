@@ -56,7 +56,7 @@ void FCameraController::ProcessMouseInput()
 	else if (isCameraRotating && isMouseDown)
 	{
 		auto camera = scene->camera;
-		const float rotateSpeed = -0.002f;
+		const float rotateSpeed = 0.002f;
 
 		float deltaXMousePosition = inputManager->currentXMousePos - initialXMousePosition;
 		float deltaYMousePosition = inputManager->currentYMousePos - initialYMousePosition;

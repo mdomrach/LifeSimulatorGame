@@ -120,6 +120,9 @@
     <ClCompile Include="CameraController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TerrainEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="MakeFile">
@@ -272,6 +275,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CameraController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TerrainEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

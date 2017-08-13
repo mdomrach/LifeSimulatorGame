@@ -11,6 +11,7 @@ class FVulkanDevice;
 class FScene;
 class FTimeManager;
 class FGameManager;
+class FTerrain;
 
 class FVulkanTerrain
 {
@@ -18,10 +19,7 @@ public:
 	void *verticesMemory;
 	void *indicesMemory;
 
-	std::vector<FTerrainVertex> vertices;
-	std::vector<uint32_t> indices;
-
-	FVulkanTexture texture;
+	FTerrain* terrain;
 
 	VkPipeline graphicsPipeline;
 	VkDescriptorSet descriptorSet;
@@ -42,6 +40,8 @@ public:
 	void UpdateFrame(VkDevice logicalDevice, FScene* scene);
 
 	void BuildCommandBuffers(VkCommandBuffer commandBuffer, FScene* scene, VkPipelineLayout pipelinelayout);
+	void UpdateVertexBuffer();
+	void UpdateNormals();
 
 private:
 	FTimeManager* timeManager;
@@ -61,7 +61,6 @@ private:
 	void CreateVertexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 	void CreateIndexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 
-	void UpdateVertexBuffer();
 	void UpdateIndexBuffer();
 	void UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene);
 };
