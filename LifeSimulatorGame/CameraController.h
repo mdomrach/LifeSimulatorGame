@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/gtx/quaternion.hpp>
+
 class FInputManager;
 class FScene;
 class FGameManager;
@@ -17,6 +19,11 @@ public:
 	void ProcessInput();
 
 private:
+	bool isCameraRotating;
+	float initialXMousePosition;
+	float initialYMousePosition;
+	glm::quat initialCameraRotation;
+
 	void ProcessMouseInput();
 	void ProcessKeyboardInput();
 };

@@ -22,11 +22,15 @@ public:
 	void InitializeInput();
 	void ProcessInput();
 
-	void MonitorKeyPress(int key);
-	bool IsKeyPressed(int key);
+	void MonitorKeyState(int key);
+	int GetKeyState(int key);
+
+	void MonitorMouseState(int mouseButton);
+	int GetMouseState(int mouseButton);
 
 private:
-	std::map<int, bool> pressedKeys;
+	std::map<int, int> keyStates;
+	std::map<int, int> mouseStates;
 	void ProcessMouseInput();
 	void ProcessKeyboardInput();
 };

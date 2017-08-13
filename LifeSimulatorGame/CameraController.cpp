@@ -17,14 +17,17 @@ void FCameraController::Initialize(FGameManager* GameManager)
 	this->inputManager = GameManager->inputManager;
 	this->timeManager = GameManager->timeManager;
 
-	inputManager->MonitorKeyPress(GLFW_KEY_W);
-	inputManager->MonitorKeyPress(GLFW_KEY_S);
-	inputManager->MonitorKeyPress(GLFW_KEY_A);
-	inputManager->MonitorKeyPress(GLFW_KEY_D);
-	inputManager->MonitorKeyPress(GLFW_KEY_R);
-	inputManager->MonitorKeyPress(GLFW_KEY_F);
-	inputManager->MonitorKeyPress(GLFW_KEY_Q);
-	inputManager->MonitorKeyPress(GLFW_KEY_E);
+	inputManager->MonitorKeyState(GLFW_KEY_W);
+	inputManager->MonitorKeyState(GLFW_KEY_S);
+	inputManager->MonitorKeyState(GLFW_KEY_A);
+	inputManager->MonitorKeyState(GLFW_KEY_D);
+	inputManager->MonitorKeyState(GLFW_KEY_R);
+	inputManager->MonitorKeyState(GLFW_KEY_F);
+	inputManager->MonitorKeyState(GLFW_KEY_Q);
+	inputManager->MonitorKeyState(GLFW_KEY_E);
+
+	inputManager->MonitorMouseState(GLFW_MOUSE_BUTTON_RIGHT);
+	isCameraRotating = false;
 }
 
 void FCameraController::ProcessInput()
@@ -41,58 +44,78 @@ void FCameraController::ProcessInput()
 
 void FCameraController::ProcessMouseInput()
 {
-	auto camera = scene->camera;
-	float speed = -0.002f;
-	
-	glm::vec3 eulAngles(speed*inputManager->deltaYMousePos, speed*inputManager->deltaXMousePos, 0);
-	glm::quat orientationChange = glm::quat(eulAngles);
-	camera->rotation = orientationChange * camera->rotation;
+	int isMouseDown = inputManager->GetMouseState(GLFW_MOUSE_BUTTON_RIGHT);
+	if (!isCameraRotating && isMouseDown)
+	{
+		auto camera = scene->camera;
+		initialXMousePosition = inputManager->currentXMousePos;
+		initialYMousePosition = inputManager->currentYMousePos;
+		initialCameraRotation = camera->rotation;
+		isCameraRotating = true;
+	}
+	else if (isCameraRotating && isMouseDown)
+	{
+		auto camera = scene->camera;
+		const float rotateSpeed = -0.002f;
+
+		float deltaXMousePosition = inputManager->currentXMousePos - initialXMousePosition;
+		float deltaYMousePosition = inputManager->currentYMousePos - initialYMousePosition;
+
+		glm::vec3 eulAngles(rotateSpeed*deltaYMousePosition, rotateSpeed*deltaXMousePosition, 0);
+		glm::quat orientationChange = glm::quat(eulAngles);
+		camera->rotation = orientationChange * initialCameraRotation;
+	}
+	else if (isCameraRotating && !isMouseDown)
+	{
+		isCameraRotating = false;
+	}
 }
 
 void FCameraController::ProcessKeyboardInput()
 {
 	auto camera = scene->camera;
-	float cameraSpeed = 2.5f * timeManager->deltaFrameTime;
+	float moveSpeed = 2.5f * timeManager->deltaFrameTime;
 
 	glm::vec3 translation = glm::vec3(0, 0, 0);
 
-	if (inputManager->IsKeyPressed(GLFW_KEY_W))
+	if (inputManager->GetKeyState(GLFW_KEY_W))
 	{
-		translation.z += cameraSpeed;
+		translation.z += moveSpeed;
 	}
-	if (inputManager->IsKeyPressed(GLFW_KEY_S))
+	if (inputManager->GetKeyState(GLFW_KEY_S))
 	{
-		translation.z -= cameraSpeed;
+		translation.z -= moveSpeed;
 	}
-	if (inputManager->IsKeyPressed(GLFW_KEY_A))
+	if (inputManager->GetKeyState(GLFW_KEY_A))
 	{
-		translation.x += cameraSpeed;
+		translation.x += moveSpeed;
 	}
-	if (inputManager->IsKeyPressed(GLFW_KEY_D))
+	if (inputManager->GetKeyState(GLFW_KEY_D))
 	{
-		translation.x -= cameraSpeed;
+		translation.x -= moveSpeed;
 	}
-	if (inputManager->IsKeyPressed(GLFW_KEY_R))
+	if (inputManager->GetKeyState(GLFW_KEY_R))
 	{
-		translation.y -= cameraSpeed;
+		translation.y -= moveSpeed;
 	}
-	if (inputManager->IsKeyPressed(GLFW_KEY_F))
+	if (inputManager->GetKeyState(GLFW_KEY_F))
 	{
-		translation.y += cameraSpeed;
+		translation.y += moveSpeed;
 	}
 
 	glm::vec3 cameraRight = translation * glm::mat3x3(camera->view);
 	camera->position += cameraRight;
 
 
-	glm::vec3 eulAngles;// (speed*deltaYPosition, speed*deltaXPosition, 0);
-	if (inputManager->IsKeyPressed(GLFW_KEY_Q))
+	glm::vec3 eulAngles;
+	float rotateSpeed = moveSpeed;
+	if (inputManager->GetKeyState(GLFW_KEY_Q))
 	{
-		eulAngles.z -= cameraSpeed;
+		eulAngles.z -= rotateSpeed;
 	}
-	if (inputManager->IsKeyPressed(GLFW_KEY_E))
+	if (inputManager->GetKeyState(GLFW_KEY_E))
 	{
-		eulAngles.z += cameraSpeed;
+		eulAngles.z += rotateSpeed;
 	}
 
 	glm::quat orientationChange = glm::quat(eulAngles);

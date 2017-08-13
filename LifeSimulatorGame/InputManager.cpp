@@ -36,23 +36,40 @@ void FInputManager::ProcessMouseInput()
 
 	currentXMousePos = xMousePosition;
 	currentYMousePos = yMousePosition;
+
+
+	for (auto item : mouseStates)
+	{
+		auto mouseButton = item.first;
+		mouseStates[mouseButton] = glfwGetMouseButton(window, mouseButton);
+	}
 }
 
 void FInputManager::ProcessKeyboardInput()
 {
-	for (auto item : pressedKeys)
+	for (auto item : keyStates)
 	{
 		auto key = item.first;
-		pressedKeys[key] = (glfwGetKey(window, key) == GLFW_PRESS);
+		keyStates[key] = glfwGetKey(window, key);
 	}
 }
 
-void FInputManager::MonitorKeyPress(int key)
+void FInputManager::MonitorKeyState(int key)
 {
-	pressedKeys.insert(std::pair<int, bool>(key, false));
+	keyStates.insert(std::pair<int, int>(key, GLFW_RELEASE));
 }
 
-bool FInputManager::IsKeyPressed(int key)
+int FInputManager::GetKeyState(int key)
 {
-	return pressedKeys[key];
+	return keyStates[key];
+}
+
+void FInputManager::MonitorMouseState(int mouseButton)
+{
+	mouseStates.insert(std::pair<int, int>(mouseButton, GLFW_RELEASE));
+}
+
+int FInputManager::GetMouseState(int mouseButton)
+{
+	return mouseStates[mouseButton];
 }
