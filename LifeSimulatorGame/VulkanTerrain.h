@@ -44,5 +44,9 @@ private:
 	VkPipelineInputAssemblyStateCreateInfo* CreatePipelineInputAssemblyStateCreateInfo();
 	VkPipelineColorBlendStateCreateInfo* CreatePipelineColorBlendStateCreateInfo();
 	VkPipelineDepthStencilStateCreateInfo* CreatePipelineDepthStencilStateCreateInfo();
+
+	const int numberOfQuads = 16;
+	const int numberOfVertices = 17;
+	int GetVertexIndex(int x, int y);
 };
 

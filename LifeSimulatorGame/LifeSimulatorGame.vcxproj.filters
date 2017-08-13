@@ -144,6 +144,8 @@
     <None Include="Shaders\model.vert.spv" />
     <None Include="Shaders\terrain.frag" />
     <None Include="Shaders\terrain.vert" />
+    <None Include="Shaders\terrain.frag.spv" />
+    <None Include="Shaders\terrain.vert.spv" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="QueueFamilyIndices.h">

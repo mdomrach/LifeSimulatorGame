@@ -6,7 +6,8 @@
 struct FTerrainVertex
 {
 	glm::vec3 pos;
+	glm::vec3 normal;
 
 	static struct VkVertexInputBindingDescription GetVertexBindingDescription();
-	static std::array<struct VkVertexInputAttributeDescription, 1> GetVertexAttributeDescriptions();
+	static std::array<struct VkVertexInputAttributeDescription, 2> GetVertexAttributeDescriptions();
 };

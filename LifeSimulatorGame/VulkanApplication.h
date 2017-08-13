@@ -7,7 +7,7 @@
 #include "VulkanSwapChain.h"
 #include "VulkanBuffer.h"
 #include "VulkanDevice.h"
-#include "Environment.h"
+//#include "Environment.h"
 #include "ParticleFire.h"
 #include "VulkanTerrain.h"
 
@@ -70,8 +70,8 @@ public:
 
 	VkDescriptorPool descriptorPool;
 
-	FEnvironment environment;
-	FParticleFire particleFire;
+	//FEnvironment environment;
+	//FParticleFire particleFire;
 	FVulkanTerrain terrain;
 
 	VkImage depthImage;

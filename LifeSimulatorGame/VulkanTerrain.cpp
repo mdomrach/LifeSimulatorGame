@@ -21,18 +21,42 @@ void FVulkanTerrain::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool comman
 {
 	PerlinNoise Noise;
 
-	const int numberOfQuads = 16;
-	const int numberOfVertices = 17;
+	const float noiseAmplitude = 1.2f;
+	const float noiseFrequency = 2.5f / numberOfVertices;
 
 	for (int x = 0; x < numberOfVertices; x++)
 	{
 		for (int y = 0; y < numberOfVertices; y++)
 		{
-			float height = Noise.noise((float) x/ numberOfVertices, float(y)/ numberOfVertices);
+			float height = noiseAmplitude * Noise.noise( x * noiseFrequency, y * noiseFrequency);
 
 			FTerrainVertex Vertex;
 			Vertex.pos = { x - numberOfQuads/2, y - numberOfQuads / 2, height };
+			Vertex.normal = glm::vec3(0, 0, 1);
 			vertices.push_back(Vertex);
+		}
+	}
+	
+	for (int x = 1; x < numberOfVertices - 1; x++)
+	{
+		for (int y = 1; y < numberOfVertices - 1; y++)
+		{
+			int index11 = GetVertexIndex(x + 0, y + 0);
+			glm::vec3 height11 = vertices[index11].pos;
+
+			int index01 = GetVertexIndex(x - 1, y + 0);
+			int index10 = GetVertexIndex(x + 0, y - 1);
+			int index21 = GetVertexIndex(x + 1, y + 0);
+			int index12 = GetVertexIndex(x + 0, y + 1);
+
+			glm::vec3 height01 = vertices[index01].pos;
+			glm::vec3 height21 = vertices[index21].pos;
+			glm::vec3 height10 = vertices[index10].pos;
+			glm::vec3 height12 = vertices[index12].pos;
+
+			glm::vec3 normal1 = glm::cross(height01 - height11, height10 - height11);
+			glm::vec3 normal2 = glm::cross(height21 - height11, height12 - height11);
+			vertices[index11].normal = normal1 + normal2;
 		}
 	}
 
@@ -40,15 +64,18 @@ void FVulkanTerrain::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool comman
 	{
 		for (int y = 0; y < numberOfQuads; y++)
 		{
-			int startIndex = x * numberOfVertices + y;
+			int index00 = GetVertexIndex(x + 0, y + 0);
+			int index01 = GetVertexIndex(x + 0, y + 1);
+			int index10 = GetVertexIndex(x + 1, y + 0);
+			int index11 = GetVertexIndex(x + 1, y + 1);
 
-			indices.push_back(startIndex + 0);
-			indices.push_back(startIndex + 0 + numberOfVertices);
-			indices.push_back(startIndex + 1);
+			indices.push_back(index00);
+			indices.push_back(index10);
+			indices.push_back(index01);
 
-			indices.push_back(startIndex + 0 + numberOfVertices);
-			indices.push_back(startIndex + 1 + numberOfVertices);
-			indices.push_back(startIndex + 1);
+			indices.push_back(index10);
+			indices.push_back(index11);
+			indices.push_back(index01);
 		}
 	}
 
@@ -196,8 +223,7 @@ void FVulkanTerrain::CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool com
 void FVulkanTerrain::CreateVertexBuffer(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-
+	
 	FVulkanBuffer stagingBuffer;
 	VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	VkMemoryPropertyFlags stagingMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -288,4 +314,9 @@ VkPipelineDepthStencilStateCreateInfo* FVulkanTerrain::CreatePipelineDepthStenci
 	depthStencil->front = {};
 	depthStencil->back = {};
 	return depthStencil;
+}
+
+int FVulkanTerrain::GetVertexIndex(int x, int y)
+{
+	return x * numberOfVertices + y;
 }
