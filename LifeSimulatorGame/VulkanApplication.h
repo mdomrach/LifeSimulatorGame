@@ -121,4 +121,7 @@ public:
 	void CreateDescriptorSetLayout();
 	void CreateDescriptorPool();
 	void CreateDepthResources();
+
+	int frameCount;
+	float nextFPSUpdateTime;
 };

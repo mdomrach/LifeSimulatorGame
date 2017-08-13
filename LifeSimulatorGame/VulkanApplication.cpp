@@ -43,6 +43,8 @@
 
 void FVulkanApplication::InitializeVulkan()
 {
+	frameCount = 0;
+
 	InitWindow();
 	if (CreateVulkanInstance() != VK_SUCCESS)
 	{
@@ -715,6 +717,14 @@ void FVulkanApplication::UpdateUniformBuffer()
 	//particleFire.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
 	//particleFire.UpdateParticles();
 	terrain.UpdateFrame(vulkanDevice.logicalDevice, scene);
+
+	frameCount++;
+	if (timeManager->startFrameTime > nextFPSUpdateTime)
+	{
+		UpdateTextOverlay();
+		frameCount = 0;
+		nextFPSUpdateTime++;
+	}
 }
 
 void FVulkanApplication::CreateDescriptorPool()
@@ -753,7 +763,15 @@ void FVulkanApplication::UpdateTextOverlay()
 {
 	textOverlay->BeginTextUpdate(&vulkanDevice);
 
-	textOverlay->AddText("Life Simulator Game", 5.0f, 5.0f, FTextOverlay::alignLeft);
+	//textOverlay->AddText("Life Simulator Game", 5.0f, 5.0f, FTextOverlay::alignLeft);
+
+	//int fps = frameCount;
+	//float timeFor60Frames = 60.0f / fps;
+	//std::string timeText = std::to_string(timeFor60Frames);
+
+	int fps = frameCount;
+	std::string timeText = std::to_string(fps);
+	textOverlay->AddText(timeText, 5.0f, 5.0f, FTextOverlay::alignLeft);
 	//textOverlay->AddText(title, 5.0f, 5.0f, FTextOverlay::alignLeft);
 
 	//std::stringstream ss;

@@ -283,6 +283,8 @@ void FVulkanTerrain::CreateVertexBuffer2(FVulkanDevice vulkanDevice, VkCommandPo
 	{
 		throw std::runtime_error("failed to map particle memory!");
 	}
+
+	UpdateVertexBuffer();
 }
 
 void FVulkanTerrain::CreateIndexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
