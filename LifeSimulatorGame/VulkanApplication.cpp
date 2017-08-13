@@ -67,6 +67,7 @@ void FVulkanApplication::Initialize(FGameManager* gameManager)
 	scene = gameManager->scene;
 
 	//particleFire.Initialize(gameManager);
+	terrain.Initialize(gameManager);
 }
 
 void FVulkanApplication::InitWindow()
@@ -95,7 +96,7 @@ void FVulkanApplication::LoadScene()
 {
 	//environment.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
 	//particleFire.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
-	terrain.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
+	terrain.LoadAssets();
 	FSceneCalculator::LoadScene(scene, swapChain.extent.width, swapChain.extent.height);
 }
 
@@ -713,7 +714,7 @@ void FVulkanApplication::UpdateUniformBuffer()
 	//environment.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
 	//particleFire.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
 	//particleFire.UpdateParticles();
-	terrain.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
+	terrain.UpdateFrame(vulkanDevice.logicalDevice, scene);
 }
 
 void FVulkanApplication::CreateDescriptorPool()

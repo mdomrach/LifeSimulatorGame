@@ -16,8 +16,15 @@
 #include "Mesh.h"
 #include "VulkanTextureCreateInfo.h"
 #include "PerlinNoise.h"
+#include "GameManager.h"
+#include "TimeManager.h"
 
-void FVulkanTerrain::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue queue)
+void FVulkanTerrain::Initialize(FGameManager* gameManager)
+{
+	timeManager = gameManager->timeManager;
+}
+
+void FVulkanTerrain::LoadAssets()
 {
 	PerlinNoise Noise;
 
@@ -78,14 +85,6 @@ void FVulkanTerrain::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool comman
 			indices.push_back(index01);
 		}
 	}
-
-	//vertices = {
-	//	{ { -5, -5, 0.0f } },
-	//	{ { -5, 5, 0.0f } },
-	//	{ { 5, -5, 0.0f } },
-	//	{ { 5, 5, 0.0f } },
-	//};
-	//indices = { 0, 2, 1, 2, 3, 1 };
 }
 
 
@@ -187,6 +186,13 @@ void FVulkanTerrain::CreateUniformBuffer(FVulkanDevice vulkanDevice)
 	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, uniformBuffer.buffer, uniformBuffer.bufferMemory);
 }
 
+void FVulkanTerrain::UpdateFrame(VkDevice logicalDevice, FScene* scene)
+{
+	UpdateUniformBuffer(logicalDevice, scene);
+	UpdateVertexBuffer();
+	//UpdateIndexBuffer();
+}
+
 void FVulkanTerrain::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
 {
 	FUniformBufferObject uniformBufferObject = {};
@@ -215,7 +221,7 @@ void FVulkanTerrain::BuildCommandBuffers(VkCommandBuffer commandBuffer, FScene* 
 
 void FVulkanTerrain::CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	CreateVertexBuffer(vulkanDevice, commandPool, graphicsQueue);
+	CreateVertexBuffer2(vulkanDevice, commandPool, graphicsQueue);
 	CreateIndexBuffer(vulkanDevice, commandPool, graphicsQueue);
 	CreateUniformBuffer(vulkanDevice);
 }
@@ -264,6 +270,106 @@ void FVulkanTerrain::CreateIndexBuffer(FVulkanDevice vulkanDevice, VkCommandPool
 	FVulkanBufferCalculator::CopyBuffer(vulkanDevice.logicalDevice, commandPool, graphicsQueue, stagingBuffer.buffer, indexBuffer.buffer, bufferSize);
 
 	stagingBuffer.Destroy(vulkanDevice.logicalDevice);
+}
+
+void FVulkanTerrain::CreateVertexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+{
+	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, vertexBuffer.buffer, vertexBuffer.bufferMemory);
+	
+	if (vkMapMemory(vulkanDevice.logicalDevice, vertexBuffer.bufferMemory, 0, bufferSize, 0, &verticesMemory) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to map particle memory!");
+	}
+}
+
+void FVulkanTerrain::CreateIndexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
+{
+	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+	VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, indexBuffer.buffer, indexBuffer.bufferMemory);
+
+	if (vkMapMemory(vulkanDevice.logicalDevice, indexBuffer.bufferMemory, 0, bufferSize, 0, &indicesMemory) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to map particle memory!");
+	}
+}
+
+void FVulkanTerrain::UpdateVertexBuffer()
+{
+	PerlinNoise Noise;
+
+	const float noiseAmplitude = 1.2f;
+	const float noiseFrequency = 2.5f / numberOfVertices;
+	float offset = timeManager->startFrameTime;
+
+	int i = 0;
+	for (int x = 0; x < numberOfVertices; x++)
+	{
+		for (int y = 0; y < numberOfVertices; y++)
+		{
+			float height = noiseAmplitude * Noise.noise((x+ offset) * noiseFrequency, y * noiseFrequency);
+
+			vertices[i].pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };
+			vertices[i].normal = glm::vec3(0, 0, 1);
+			i++;
+		}
+	}
+
+	for (int x = 1; x < numberOfVertices - 1; x++)
+	{
+		for (int y = 1; y < numberOfVertices - 1; y++)
+		{
+			int index11 = GetVertexIndex(x + 0, y + 0);
+			glm::vec3 height11 = vertices[index11].pos;
+
+			int index01 = GetVertexIndex(x - 1, y + 0);
+			int index10 = GetVertexIndex(x + 0, y - 1);
+			int index21 = GetVertexIndex(x + 1, y + 0);
+			int index12 = GetVertexIndex(x + 0, y + 1);
+
+			glm::vec3 height01 = vertices[index01].pos;
+			glm::vec3 height21 = vertices[index21].pos;
+			glm::vec3 height10 = vertices[index10].pos;
+			glm::vec3 height12 = vertices[index12].pos;
+
+			glm::vec3 normal1 = glm::cross(height01 - height11, height10 - height11);
+			glm::vec3 normal2 = glm::cross(height21 - height11, height12 - height11);
+			vertices[index11].normal = normal1 + normal2;
+		}
+	}
+
+	size_t size = sizeof(vertices[0]) * vertices.size();
+	memcpy(verticesMemory, vertices.data(), size);
+}
+
+void FVulkanTerrain::UpdateIndexBuffer()
+{
+	int i = 0;
+	for (int x = 0; x < numberOfQuads; x++)
+	{
+		for (int y = 0; y < numberOfQuads; y++)
+		{
+			int index00 = GetVertexIndex(x + 0, y + 0);
+			int index01 = GetVertexIndex(x + 0, y + 1);
+			int index10 = GetVertexIndex(x + 1, y + 0);
+			int index11 = GetVertexIndex(x + 1, y + 1);
+
+			indices[i++] = index00;
+			indices[i++] = index10;
+			indices[i++] = index01;
+
+			indices[i++] = index10;
+			indices[i++] = index11;
+			indices[i++] = index01;
+		}
+	}
+
+	size_t size = sizeof(indices[0]) * indices.size();
+	memcpy(indicesMemory, indices.data(), size);
 }
 
 VkPipelineInputAssemblyStateCreateInfo* FVulkanTerrain::CreatePipelineInputAssemblyStateCreateInfo()
