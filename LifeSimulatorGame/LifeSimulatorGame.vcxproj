@@ -121,6 +121,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="BufferCreateInfo.cpp" />
+    <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="FileCalculator.cpp" />
     <ClCompile Include="Particle.cpp" />
@@ -180,6 +181,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BufferCreateInfo.h" />
+    <ClInclude Include="CameraController.h" />
     <ClInclude Include="Environment.h" />
     <ClInclude Include="FileCalculator.h" />
     <ClInclude Include="HeightMap.h" />

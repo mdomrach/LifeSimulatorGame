@@ -1,27 +1,33 @@
 #pragma once
+#include <map>
 
 struct GLFWwindow;
-class FScene;
 class FGameManager;
 
 class FInputManager
 {
 private:
 	GLFWwindow* window;
-	FScene* scene;
 
 public:
+
+	float deltaXMousePos;
+	float deltaYMousePos;
+
+	float currentXMousePos;
+	float currentYMousePos;
+
 	void Initialize(FGameManager* GameManager);
 
 	void InitializeInput();
-	void ProcessInput(float deltaFrameTime);
+	void ProcessInput();
+
+	void MonitorKeyPress(int key);
+	bool IsKeyPressed(int key);
 
 private:
-	// should be moved to input manager
-	float lastXPos;
-	float lastYPos;
-	
+	std::map<int, bool> pressedKeys;
 	void ProcessMouseInput();
-	void ProcessKeyboardInput(float deltaFrameTime);
+	void ProcessKeyboardInput();
 };
 

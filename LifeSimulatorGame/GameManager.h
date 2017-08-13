@@ -4,6 +4,7 @@ class FScene;
 class FInputManager;
 class FVulkanApplication;
 class FTimeManager;
+class FCameraController;
 
 class FGameManager
 {
@@ -12,12 +13,12 @@ public:
 	FInputManager* inputManager;
 	FVulkanApplication* vulkanApplication;
 	FTimeManager* timeManager;
+	FCameraController* cameraController;
 
 	FGameManager();
 	
 	void Run();
 private:
-	void InitializeGame();
 	void MainLoop();
 	void CleanupGame();
 };

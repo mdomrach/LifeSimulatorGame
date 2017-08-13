@@ -6,6 +6,7 @@
 #include "TimeManager.h"
 #include "SleepCalculator.h"
 #include "VulkanDevice.h"
+#include "CameraController.h"
 
 FGameManager::FGameManager()
 {
@@ -13,23 +14,19 @@ FGameManager::FGameManager()
 	inputManager = new FInputManager();
 	vulkanApplication = new FVulkanApplication();
 	timeManager = new FTimeManager();
+	cameraController = new FCameraController();
 
 	vulkanApplication->Initialize(this);
 	vulkanApplication->InitializeVulkan();
 
 	inputManager->Initialize(this);
+	cameraController->Initialize(this);
 }
 
 void FGameManager::Run()
 {
-	InitializeGame();
 	MainLoop();
 	CleanupGame();
-}
-
-void FGameManager::InitializeGame()
-{
-	//vulkanApplication->InitializeVulkan();
 }
 
 void FGameManager::MainLoop()
@@ -37,22 +34,15 @@ void FGameManager::MainLoop()
 	inputManager->InitializeInput();
 	while (!glfwWindowShouldClose(vulkanApplication->window))
 	{
-		//float startLoopTime = startFrameTime;
-		//for (int i = 0; i < 1000 && !glfwWindowShouldClose(window); i++)
-		//{
 		glfwPollEvents();
 		timeManager->UpdateTime();
-		inputManager->ProcessInput(timeManager->deltaFrameTime);
+		inputManager->ProcessInput();
+		cameraController->ProcessInput();
 
 		vulkanApplication->UpdateUniformBuffer();
 		vulkanApplication->DrawFrame();
 
 		FSleepCalculator::SleepUntilWaitTime(timeManager->deltaFrameTime);
-		//}
-		//float endLoopTime = startFrameTime;
-		//float loopTime = (endLoopTime - startLoopTime);
-		//float loopFramePerSecond = 1000 / loopTime;
-		//std::cout << loopFramePerSecond << " "<< loopTime<< "\n";
 	}
 
 	vkDeviceWaitIdle(vulkanApplication->vulkanDevice.logicalDevice);
