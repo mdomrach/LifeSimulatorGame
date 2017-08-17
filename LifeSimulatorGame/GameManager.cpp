@@ -9,6 +9,7 @@
 #include "CameraController.h"
 #include "TerrainEditor.h"
 #include "Terrain.h"
+#include "VulkanScreenGrab.h"
 
 FGameManager::FGameManager()
 {
@@ -19,6 +20,7 @@ FGameManager::FGameManager()
 	cameraController = new FCameraController();
 	terrainEditor = new FTerrainEditor();
 	terrain = new FTerrain();
+	screenGrab = new FVulkanScreenGrab();
 
 	vulkanApplication->Initialize(this);
 	vulkanApplication->InitializeVulkan();
@@ -26,6 +28,7 @@ FGameManager::FGameManager()
 	inputManager->Initialize(this);
 	cameraController->Initialize(this);
 	terrainEditor->Initialize(this);
+	screenGrab->Initialize(this);
 }
 
 void FGameManager::Run()
@@ -44,6 +47,7 @@ void FGameManager::MainLoop()
 		inputManager->ProcessInput();
 		cameraController->ProcessInput();
 		terrainEditor->ProcessInput();
+		screenGrab->ProcessInput();
 
 		vulkanApplication->UpdateUniformBuffer();
 		vulkanApplication->DrawFrame();

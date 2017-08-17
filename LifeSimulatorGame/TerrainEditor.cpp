@@ -61,7 +61,7 @@ void FTerrainEditor::Flatten(glm::vec2 hitPosition, float maxHeightChange)
 	int flattenVertCount = 0;
 	float flattenHeightSum = 0.0f;
 	
-	for (int i = 0; i < numberOfVertices * numberOfVertices; i++)
+	for (int i = 0; i < terrain->vertices.size(); i++)
 	{
 		auto vertexPosition = terrain->vertices[i].pos;
 		auto vertexPosition2D = glm::vec2(vertexPosition.x, vertexPosition.y);
@@ -77,7 +77,7 @@ void FTerrainEditor::Flatten(glm::vec2 hitPosition, float maxHeightChange)
 		return;
 
 	float flattenAverage = flattenHeightSum / flattenVertCount;
-	for (int i = 0; i < numberOfVertices * numberOfVertices; i++)
+	for (int i = 0; i < terrain->vertices.size(); i++)
 	{
 		auto vertexPosition = terrain->vertices[i].pos;
 		auto vertexPosition2D = glm::vec2(vertexPosition.x, vertexPosition.y);
@@ -91,7 +91,7 @@ void FTerrainEditor::Flatten(glm::vec2 hitPosition, float maxHeightChange)
 
 void FTerrainEditor::Lower(glm::vec2 hitPosition, float maxHeightChange)
 {
-	for (int i = 0; i < numberOfVertices * numberOfVertices; i++)
+	for (int i = 0; i < terrain->vertices.size(); i++)
 	{
 		auto vertexPosition = terrain->vertices[i].pos;
 		auto vertexPosition2D = glm::vec2(vertexPosition.x, vertexPosition.y);
@@ -106,7 +106,7 @@ void FTerrainEditor::Lower(glm::vec2 hitPosition, float maxHeightChange)
 void FTerrainEditor::Raise(glm::vec2 hitPosition, float maxHeightChange)
 {
 
-	for (int i = 0; i < numberOfVertices * numberOfVertices; i++)
+	for (int i = 0; i < terrain->vertices.size(); i++)
 	{
 		auto vertexPosition = terrain->vertices[i].pos;
 		auto vertexPosition2D = glm::vec2(vertexPosition.x, vertexPosition.y);

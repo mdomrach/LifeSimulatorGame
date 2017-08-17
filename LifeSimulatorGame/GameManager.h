@@ -7,6 +7,7 @@ class FTimeManager;
 class FCameraController;
 class FTerrainEditor;
 class FTerrain;
+class FVulkanScreenGrab;
 
 class FGameManager
 {
@@ -18,6 +19,7 @@ public:
 	FCameraController* cameraController;
 	FTerrainEditor* terrainEditor;
 	FTerrain* terrain;
+	FVulkanScreenGrab* screenGrab;
 
 	FGameManager();
 	

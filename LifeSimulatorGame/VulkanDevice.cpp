@@ -76,6 +76,7 @@ bool FVulkanDeviceCreateInfo::PickPhysicalDevice(VkInstance* instance, const std
 		if (vulkanDevice->physicalDevice == VK_NULL_HANDLE || deviceSuitability > bestDeviceSuitability)
 		{
 			vulkanDevice->physicalDevice = Device;
+			vkGetPhysicalDeviceMemoryProperties(vulkanDevice->physicalDevice, &vulkanDevice->memoryProperties);
 			bestDeviceSuitability = deviceSuitability;
 		}
 	}
@@ -270,4 +271,42 @@ void FVulkanDevice::DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugRe
 	{
 		func(instance, callback, pAllocator);
 	}
+}
+
+uint32_t FVulkanDevice::GetMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound)
+{
+	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
+	{
+		if ((typeBits & 1) == 1)
+		{
+			if ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				if (memTypeFound)
+				{
+					*memTypeFound = true;
+				}
+				return i;
+			}
+		}
+		typeBits >>= 1;
+	}
+
+#if defined(__ANDROID__)
+	//todo : Exceptions are disabled by default on Android (need to add LOCAL_CPP_FEATURES += exceptions to Android.mk), so for now just return zero
+	if (memTypeFound)
+	{
+		*memTypeFound = false;
+	}
+	return 0;
+#else
+	if (memTypeFound)
+	{
+		*memTypeFound = false;
+		return 0;
+	}
+	else
+	{
+		throw std::runtime_error("Could not find a matching memory type");
+	}
+#endif
 }

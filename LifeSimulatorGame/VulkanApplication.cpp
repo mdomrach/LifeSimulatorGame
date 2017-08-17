@@ -241,7 +241,9 @@ VkExtent2D FVulkanApplication::ChoseSwapExtent(const VkSurfaceCapabilitiesKHR& c
 
 void FVulkanApplication::CleanupSwapChain()
 {
+	/*
 	textOverlay->Destroy(&vulkanDevice);
+	*/
 
 	vkDestroyImageView(vulkanDevice.logicalDevice, depthImageView, nullptr);
 	vkDestroyImage(vulkanDevice.logicalDevice, depthImage, nullptr);
@@ -425,7 +427,7 @@ void FVulkanApplication::CreateRenderPass()
 	depthAttachment.format = FVulkanCalculator::FindDepthFormat(vulkanDevice.physicalDevice);
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -648,7 +650,9 @@ void FVulkanApplication::DrawFrame()
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
+	/*
 	textOverlay->Submit(graphicsQueue, imageIndex);
+	*/
 
 	VkPresentInfoKHR presentInfo = FVulkanInitializers::PresentInfoKHR();
 	presentInfo.waitSemaphoreCount = 1;
@@ -750,7 +754,7 @@ void FVulkanApplication::CreateDepthResources()
 {
 	VkFormat depthFormat = FVulkanCalculator::FindDepthFormat(vulkanDevice.physicalDevice);
 	FVulkanImageCalculator::CreateImage(vulkanDevice, swapChain.extent.width, swapChain.extent.height, depthFormat,
-		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		depthImage, depthImageMemory);
 	depthImageView = FVulkanFactory::ImageView(vulkanDevice.logicalDevice, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 	FVulkanImageCalculator::TransitionImageLayout(
@@ -761,6 +765,7 @@ void FVulkanApplication::CreateDepthResources()
 // Update the text buffer displayed by the text overlay
 void FVulkanApplication::UpdateTextOverlay()
 {
+	/*
 	textOverlay->BeginTextUpdate(&vulkanDevice);
 
 	//textOverlay->AddText("Life Simulator Game", 5.0f, 5.0f, FTextOverlay::alignLeft);
@@ -784,6 +789,7 @@ void FVulkanApplication::UpdateTextOverlay()
 	//textOverlay->AddText("Hold middle mouse button and drag to move", 5.0f, 85.0f, FTextOverlay::alignLeft);
 
 	textOverlay->EndTextUpdate(&vulkanDevice);
+	*/
 }
 
 void FVulkanApplication::PrepareTextOverlay()
@@ -807,9 +813,10 @@ void FVulkanApplication::PrepareTextOverlay()
 	fragShaderStageInfo.pName = "main";
 
 	std::vector<VkPipelineShaderStageCreateInfo> textshaderStages = { vertShaderStageInfo, fragShaderStageInfo };
-
+	/*
 	textOverlay = new FTextOverlay();
 	textOverlay->Initialize(this, textshaderStages);
+	*/
 
 	UpdateTextOverlay();
 

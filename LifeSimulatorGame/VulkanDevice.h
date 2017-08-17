@@ -13,7 +13,8 @@ public:
 	//VkPhysicalDeviceProperties properties;
 	//VkPhysicalDeviceFeatures features;
 	//VkPhysicalDeviceFeatures enabledFeatures;
-	//VkPhysicalDeviceMemoryProperties memoryProperties;
+	VkPhysicalDeviceMemoryProperties memoryProperties;
+	uint32_t GetMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound = nullptr);
 	//std::vector<VkQueueFamilyProperties> queueFamilyProperties;
 	//std::vector<std::string> supportedExtensions;
 	FSwapChainSupportDetails swapChainSupportDetails;
