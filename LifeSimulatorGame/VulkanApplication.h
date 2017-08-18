@@ -15,6 +15,7 @@ class FScene;
 class FInputManager;
 class FTimeManager;
 class FGameManager;
+class FVulkanScreenGrab;
 
 class FVulkanApplication {
 public:
@@ -80,6 +81,7 @@ public:
 
 	FInputManager* inputManager;
 	FTimeManager* timeManager;
+	FVulkanScreenGrab* screenGrab;
 
 	const std::vector<const char*> deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME

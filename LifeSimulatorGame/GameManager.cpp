@@ -52,7 +52,7 @@ void FGameManager::MainLoop()
 		vulkanApplication->UpdateUniformBuffer();
 		vulkanApplication->DrawFrame();
 
-		FSleepCalculator::SleepUntilWaitTime(timeManager->deltaFrameTime);
+		//FSleepCalculator::SleepUntilWaitTime(timeManager->deltaFrameTime);
 	}
 
 	vkDeviceWaitIdle(vulkanApplication->vulkanDevice.logicalDevice);

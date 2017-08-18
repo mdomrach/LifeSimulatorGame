@@ -40,6 +40,7 @@
 #include "FileCalculator.h"
 #include "ShaderCalculator.h"
 #include "VulkanBufferCalculator.h"
+#include "VulkanScreenGrab.h"
 
 void FVulkanApplication::InitializeVulkan()
 {
@@ -67,6 +68,7 @@ void FVulkanApplication::Initialize(FGameManager* gameManager)
 	inputManager = gameManager->inputManager;
 	timeManager = gameManager->timeManager;
 	scene = gameManager->scene;
+	screenGrab = gameManager->screenGrab;
 
 	//particleFire.Initialize(gameManager);
 	terrain.Initialize(gameManager);
@@ -115,6 +117,8 @@ void FVulkanApplication::PrepareToDisplayScene()
 	CreateCommandBuffers();
 	BuildCommandBuffers();
 	PrepareTextOverlay();
+	screenGrab->CreateCommandBuffers(vulkanDevice, commandPool, swapChain);
+	screenGrab->BuildCommandBuffers(vulkanDevice, commandPool, swapChain, depthImage, presentQueue);
 	CreateSemaphores();
 }
 
@@ -241,9 +245,9 @@ VkExtent2D FVulkanApplication::ChoseSwapExtent(const VkSurfaceCapabilitiesKHR& c
 
 void FVulkanApplication::CleanupSwapChain()
 {
-	/*
+	screenGrab->Destroy(vulkanDevice);
+
 	textOverlay->Destroy(&vulkanDevice);
-	*/
 
 	vkDestroyImageView(vulkanDevice.logicalDevice, depthImageView, nullptr);
 	vkDestroyImage(vulkanDevice.logicalDevice, depthImage, nullptr);
@@ -650,9 +654,8 @@ void FVulkanApplication::DrawFrame()
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
-	/*
+	screenGrab->Submit(graphicsQueue, imageIndex);
 	textOverlay->Submit(graphicsQueue, imageIndex);
-	*/
 
 	VkPresentInfoKHR presentInfo = FVulkanInitializers::PresentInfoKHR();
 	presentInfo.waitSemaphoreCount = 1;
@@ -702,6 +705,8 @@ void FVulkanApplication::RecreateSwapChain()
 	CreateCommandBuffers();
 	BuildCommandBuffers();
 	PrepareTextOverlay();
+	screenGrab->CreateCommandBuffers(vulkanDevice, commandPool, swapChain);
+	screenGrab->BuildCommandBuffers(vulkanDevice, commandPool, swapChain, depthImage, presentQueue);
 }
 
 void FVulkanApplication::OnWindowResized(GLFWwindow* window, int width, int height)
@@ -765,7 +770,6 @@ void FVulkanApplication::CreateDepthResources()
 // Update the text buffer displayed by the text overlay
 void FVulkanApplication::UpdateTextOverlay()
 {
-	/*
 	textOverlay->BeginTextUpdate(&vulkanDevice);
 
 	//textOverlay->AddText("Life Simulator Game", 5.0f, 5.0f, FTextOverlay::alignLeft);
@@ -789,7 +793,6 @@ void FVulkanApplication::UpdateTextOverlay()
 	//textOverlay->AddText("Hold middle mouse button and drag to move", 5.0f, 85.0f, FTextOverlay::alignLeft);
 
 	textOverlay->EndTextUpdate(&vulkanDevice);
-	*/
 }
 
 void FVulkanApplication::PrepareTextOverlay()
@@ -813,10 +816,9 @@ void FVulkanApplication::PrepareTextOverlay()
 	fragShaderStageInfo.pName = "main";
 
 	std::vector<VkPipelineShaderStageCreateInfo> textshaderStages = { vertShaderStageInfo, fragShaderStageInfo };
-	/*
+
 	textOverlay = new FTextOverlay();
 	textOverlay->Initialize(this, textshaderStages);
-	*/
 
 	UpdateTextOverlay();
 

@@ -26,132 +26,78 @@ void FVulkanScreenGrab::Initialize(FGameManager* gameManager)
 	vulkanApplication = gameManager->vulkanApplication;
 	inputManager->MonitorKeyState(GLFW_KEY_P);
 	isScreenShot = false;
+	data = nullptr;
+	writeDepthToFile = false;
 }
 
 void FVulkanScreenGrab::ProcessInput()
 {
-	auto keyState = inputManager->GetKeyState(GLFW_KEY_P);
-	if (keyState && !isScreenShot)
-	{
-		//GrabDepthUsingBuffer(vulkanApplication->vulkanDevice, vulkanApplication->swapChain, vulkanApplication->commandPool, vulkanApplication->presentQueue, vulkanApplication->swapChain.images[0], "Depth.ppm");
-		GrabDepth(vulkanApplication->vulkanDevice, vulkanApplication->swapChain, vulkanApplication->commandPool, vulkanApplication->presentQueue, vulkanApplication->depthImage, "Depth.ppm");
-		//GrabScreen(vulkanApplication->vulkanDevice, vulkanApplication->swapChain, vulkanApplication->commandPool, vulkanApplication->presentQueue, vulkanApplication->swapChain.images[0], "SwapChain.ppm");
+	//if (writeDepthToFile)
+	//{
+	//	WriteDepthToFile(vulkanApplication->vulkanDevice, vulkanApplication->swapChain, "Depth.ppm");
+	//	writeDepthToFile = false;
+	//}
 
-		isScreenShot = true;
-	}
-	else if (!keyState && isScreenShot)
-	{
-		isScreenShot = false;
-	}
+	MapMemory(vulkanApplication->vulkanDevice);
+	OutputCurrentMousePosDepth(vulkanApplication->swapChain);
 }
 
-void FVulkanScreenGrab::GrabDepth(FVulkanDevice vulkanDevice, FVulkanSwapChain swapChain, VkCommandPool commandPool, VkQueue queue, VkImage srcImage, const char* filename)
+void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)
 {
-	VkImage screenImage;
-	VkDeviceMemory screenImageMemory;
+	if (data == nullptr && writeDepthToFile)
+		return;
 
-	int width = swapChain.extent.width;
-	int height = swapChain.extent.height;
+	auto width = swapChain.extent.width;
+	auto height = swapChain.extent.height;
+	auto currentXMousePos = inputManager->currentXMousePos;
+	auto currentYMousePos = inputManager->currentYMousePos;
 
-	// Create the linear tiled destination image to copy to and to read the memory from
-	VkImageCreateInfo imgCreateInfo = FVulkanInitializers::ImageCreateInfo();// (vks::initializers::imageCreateInfo());
-	imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	// Note that vkCmdBlitImage (if supported) will also do format conversions if the swapchain color format would differ
-	imgCreateInfo.format = FVulkanCalculator::FindDepthFormat(vulkanDevice.physicalDevice);
-	imgCreateInfo.extent.width = width;
-	imgCreateInfo.extent.height = height;
-	imgCreateInfo.extent.depth = 1;
-	imgCreateInfo.arrayLayers = 1;
-	imgCreateInfo.mipLevels = 1;
-	imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imgCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
-	imgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	// Create the image
-	//VK_CHECK_RESULT(vkCreateImage(device, &imgCreateInfo, nullptr, &dstImage));
-	vkCreateImage(vulkanDevice.logicalDevice, &imgCreateInfo, nullptr, &screenImage);
-	// Create memory to back up the image
-	VkMemoryRequirements memRequirements;
-	VkMemoryAllocateInfo memAllocInfo = FVulkanInitializers::MemoryAllocateInfo();
-	vkGetImageMemoryRequirements(vulkanDevice.logicalDevice, screenImage, &memRequirements);
-	memAllocInfo.allocationSize = memRequirements.size;
-	// Memory must be host visible to copy from
-	memAllocInfo.memoryTypeIndex = vulkanDevice.GetMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	vkAllocateMemory(vulkanDevice.logicalDevice, &memAllocInfo, nullptr, &screenImageMemory);
-	vkBindImageMemory(vulkanDevice.logicalDevice, screenImage, screenImageMemory, 0);
+	if (currentXMousePos < 0 || currentXMousePos > width)
+	{
+		return;
+	}
+	if (currentYMousePos < 0 || currentYMousePos > height)
+	{
+		return;
+	}
 
-	// Do the actual blit from the swapchain image to our host visible destination image
-	VkCommandBuffer copyCmd = FVulkanCommandBufferCalculator::BeginSingleTimeCommands(vulkanDevice.logicalDevice, commandPool);
+	const char* depths = data;
+	depths += subResourceLayout.offset;
 
-	VkImageMemoryBarrier imageMemoryBarrier = FVulkanInitializers::ImageMemoryBarrier();
+	auto elementSize = sizeof(float);
+	uint32_t offsetToCurrentMousePos = currentYMousePos * subResourceLayout.rowPitch + currentXMousePos * elementSize;
+	depths += offsetToCurrentMousePos;
+	float *currentDepth = (float*)depths;
+	auto temp = *currentDepth;
+	//std::cout << temp << " " << currentYMousePos << " " << currentXMousePos << " " << offsetToCurrentMousePos << std::endl;
+	//std::cout << temp << std::endl;
+	totalDepth += temp;
+	if (totalDepth > 1000)
+	{
+		totalDepth = 0;
+	}
+}
+void FVulkanScreenGrab::MapMemory(FVulkanDevice vulkanDevice)
+{
+	if (data != nullptr)
+		return;
 
-	// Transition destination image to transfer destination layout
-	InsertImageMemoryBarrier(
-		copyCmd,
-		screenImage,
-		0,
-		VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+	// Get layout of the image (including row pitch)
+	VkImageSubresource subResource{};
+	subResource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	//VkSubresourceLayout subResourceLayout;
 
-	// Transition swapchain image from present to transfer source layout
-	InsertImageMemoryBarrier(
-		copyCmd,
-		srcImage,
-		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-		VK_ACCESS_TRANSFER_READ_BIT,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+	vkGetImageSubresourceLayout(vulkanDevice.logicalDevice, screenImage, &subResource, &subResourceLayout);
 
-	// Otherwise use image copy (requires us to manually flip components)
-	VkImageCopy imageCopyRegion{};
-	imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-	imageCopyRegion.srcSubresource.layerCount = 1;
-	imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-	imageCopyRegion.dstSubresource.layerCount = 1;
-	imageCopyRegion.extent.width = width;
-	imageCopyRegion.extent.height = height;
-	imageCopyRegion.extent.depth = 1;
+	// Map image memory so we can start copying from it
+	vkMapMemory(vulkanDevice.logicalDevice, screenImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
+	writeDepthToFile = false;
+}
 
-	// Issue the copy command
-	vkCmdCopyImage(
-		copyCmd,
-		srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		screenImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		1,
-		&imageCopyRegion);
-
-	// Transition destination image to general layout, which is the required layout for mapping the image memory later on
-	InsertImageMemoryBarrier(
-		copyCmd,
-		screenImage,
-		VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_IMAGE_LAYOUT_GENERAL,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
-
-	// Transition back the swap chain image after the blit is done
-	InsertImageMemoryBarrier(
-		copyCmd,
-		srcImage,
-		VK_ACCESS_TRANSFER_READ_BIT,
-		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
-
-	FVulkanCommandBufferCalculator::EndSingleTimeCommands(copyCmd, vulkanDevice.logicalDevice, queue, commandPool);
+void FVulkanScreenGrab::WriteDepthToFile(FVulkanDevice vulkanDevice, FVulkanSwapChain swapChain, const char* filename)
+{
+	auto width = swapChain.extent.width;
+	auto height = swapChain.extent.height;
 
 	// Get layout of the image (including row pitch)
 	VkImageSubresource subResource{};
@@ -186,147 +132,6 @@ void FVulkanScreenGrab::GrabDepth(FVulkanDevice vulkanDevice, FVulkanSwapChain s
 	std::cout << "Depth Screenshot saved to disk" << std::endl;
 }
 
-void FVulkanScreenGrab::GrabScreen(FVulkanDevice vulkanDevice, FVulkanSwapChain swapChain, VkCommandPool commandPool, VkQueue queue, VkImage srcImage, const char* filename)
-{
-	VkImage screenImage;
-	VkDeviceMemory screenImageMemory;
-
-	int width = swapChain.extent.width;
-	int height = swapChain.extent.height;
-	
-	// Create the linear tiled destination image to copy to and to read the memory from
-	VkImageCreateInfo imgCreateInfo = FVulkanInitializers::ImageCreateInfo();// (vks::initializers::imageCreateInfo());
-	imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	// Note that vkCmdBlitImage (if supported) will also do format conversions if the swapchain color format would differ
-	imgCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-	imgCreateInfo.extent.width = width;
-	imgCreateInfo.extent.height = height;
-	imgCreateInfo.extent.depth = 1;
-	imgCreateInfo.arrayLayers = 1;
-	imgCreateInfo.mipLevels = 1;
-	imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imgCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
-	imgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	// Create the image
-	//VK_CHECK_RESULT(vkCreateImage(device, &imgCreateInfo, nullptr, &dstImage));
-	vkCreateImage(vulkanDevice.logicalDevice, &imgCreateInfo, nullptr, &screenImage);
-	// Create memory to back up the image
-	VkMemoryRequirements memRequirements;
-	VkMemoryAllocateInfo memAllocInfo = FVulkanInitializers::MemoryAllocateInfo();
-	vkGetImageMemoryRequirements(vulkanDevice.logicalDevice, screenImage, &memRequirements);
-	memAllocInfo.allocationSize = memRequirements.size;
-	// Memory must be host visible to copy from
-	memAllocInfo.memoryTypeIndex = vulkanDevice.GetMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	vkAllocateMemory(vulkanDevice.logicalDevice, &memAllocInfo, nullptr, &screenImageMemory);
-	vkBindImageMemory(vulkanDevice.logicalDevice, screenImage, screenImageMemory, 0);
-
-	// Do the actual blit from the swapchain image to our host visible destination image
-	VkCommandBuffer copyCmd = FVulkanCommandBufferCalculator::BeginSingleTimeCommands(vulkanDevice.logicalDevice, commandPool);
-
-	VkImageMemoryBarrier imageMemoryBarrier = FVulkanInitializers::ImageMemoryBarrier();
-
-	// Transition destination image to transfer destination layout
-	InsertImageMemoryBarrier(
-		copyCmd,
-		screenImage,
-		0,
-		VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-	// Transition swapchain image from present to transfer source layout
-	InsertImageMemoryBarrier(
-		copyCmd,
-		srcImage,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_ACCESS_TRANSFER_READ_BIT,
-		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-	// Otherwise use image copy (requires us to manually flip components)
-	VkImageCopy imageCopyRegion{};
-	imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	imageCopyRegion.srcSubresource.layerCount = 1;
-	imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	imageCopyRegion.dstSubresource.layerCount = 1;
-	imageCopyRegion.extent.width = width;
-	imageCopyRegion.extent.height = height;
-	imageCopyRegion.extent.depth = 1;
-
-	// Issue the copy command
-	vkCmdCopyImage(
-		copyCmd,
-		srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		screenImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		1,
-		&imageCopyRegion);
-
-	// Transition destination image to general layout, which is the required layout for mapping the image memory later on
-	InsertImageMemoryBarrier(
-		copyCmd,
-		screenImage,
-		VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_IMAGE_LAYOUT_GENERAL,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-	// Transition back the swap chain image after the blit is done
-	InsertImageMemoryBarrier(
-		copyCmd,
-		srcImage,
-		VK_ACCESS_TRANSFER_READ_BIT,
-		VK_ACCESS_MEMORY_READ_BIT,
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-	FVulkanCommandBufferCalculator::EndSingleTimeCommands(copyCmd, vulkanDevice.logicalDevice, queue, commandPool);
-
-	// Get layout of the image (including row pitch)
-	VkImageSubresource subResource{};
-	subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	VkSubresourceLayout subResourceLayout;
-
-	vkGetImageSubresourceLayout(vulkanDevice.logicalDevice, screenImage, &subResource, &subResourceLayout);
-
-	// Map image memory so we can start copying from it
-	const char* data;
-	vkMapMemory(vulkanDevice.logicalDevice, screenImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
-	data += subResourceLayout.offset;
-
-	std::ofstream file(filename, std::ios::out | std::ios::binary);
-
-	// ppm header
-	file << "P6\n" << width << "\n" << height << "\n" << 255 << "\n";
-
-	// ppm binary pixel data
-	for (uint32_t y = 0; y < height; y++)
-	{
-		unsigned int *row = (unsigned int*)data;
-		for (uint32_t x = 0; x < width; x++)
-		{
-			file.write((char*)row, 3);
-			row++;
-		}
-		data += subResourceLayout.rowPitch;
-	}
-	file.close();
-
-	std::cout << "Color Screenshot saved to disk" << std::endl;
-}
-
 void FVulkanScreenGrab::InsertImageMemoryBarrier(
 	VkCommandBuffer cmdbuffer,
 	VkImage image,
@@ -354,4 +159,151 @@ void FVulkanScreenGrab::InsertImageMemoryBarrier(
 		0, nullptr,
 		0, nullptr,
 		1, &imageMemoryBarrier);
+}
+
+void FVulkanScreenGrab::CreateCommandBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, FVulkanSwapChain swapChain)
+{
+	// Images
+	// Create the linear tiled destination image to copy to and to read the memory from
+	VkImageCreateInfo imgCreateInfo = FVulkanInitializers::ImageCreateInfo();// (vks::initializers::imageCreateInfo());
+	imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	// Note that vkCmdBlitImage (if supported) will also do format conversions if the swapchain color format would differ
+	imgCreateInfo.format = FVulkanCalculator::FindDepthFormat(vulkanDevice.physicalDevice);
+	imgCreateInfo.extent.width = swapChain.extent.width;
+	imgCreateInfo.extent.height = swapChain.extent.height;
+	imgCreateInfo.extent.depth = 1;
+	imgCreateInfo.arrayLayers = 1;
+	imgCreateInfo.mipLevels = 1;
+	imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imgCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+	imgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	// Create the image
+	//VK_CHECK_RESULT(vkCreateImage(device, &imgCreateInfo, nullptr, &dstImage));
+	vkCreateImage(vulkanDevice.logicalDevice, &imgCreateInfo, nullptr, &screenImage);
+	// Create memory to back up the image
+	VkMemoryRequirements memRequirements;
+	VkMemoryAllocateInfo memAllocInfo = FVulkanInitializers::MemoryAllocateInfo();
+	vkGetImageMemoryRequirements(vulkanDevice.logicalDevice, screenImage, &memRequirements);
+	memAllocInfo.allocationSize = memRequirements.size;
+	// Memory must be host visible to copy from
+	memAllocInfo.memoryTypeIndex = vulkanDevice.GetMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	vkAllocateMemory(vulkanDevice.logicalDevice, &memAllocInfo, nullptr, &screenImageMemory);
+	vkBindImageMemory(vulkanDevice.logicalDevice, screenImage, screenImageMemory, 0);
+
+	// Command Buffers
+	cmdBuffers.resize(swapChain.imageCount);
+
+	VkCommandBufferAllocateInfo commandBufferAllocateInfo = FVulkanInitializers::CommandBufferAllocateInfo();
+	commandBufferAllocateInfo.commandPool = commandPool;
+	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	commandBufferAllocateInfo.commandBufferCount = (uint32_t)cmdBuffers.size();
+
+	if (vkAllocateCommandBuffers(vulkanDevice.logicalDevice, &commandBufferAllocateInfo, cmdBuffers.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to allocate command buffers");
+	}
+}
+
+void FVulkanScreenGrab::BuildCommandBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, FVulkanSwapChain swapChain, VkImage srcImage, VkQueue queue)
+{
+	VkCommandBufferBeginInfo cmdBufferBeginInfo = FVulkanInitializers::CommandBufferBeginInfo();
+
+	for (int32_t i = 0; i < cmdBuffers.size(); ++i)
+	{
+		vkBeginCommandBuffer(cmdBuffers[i], &cmdBufferBeginInfo);
+
+		VkImageMemoryBarrier imageMemoryBarrier = FVulkanInitializers::ImageMemoryBarrier();
+
+		// Transition destination image to transfer destination layout
+		InsertImageMemoryBarrier(
+			cmdBuffers[i],
+			screenImage,
+			0,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+
+		// Transition swapchain image from present to transfer source layout
+		InsertImageMemoryBarrier(
+			cmdBuffers[i],
+			srcImage,
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+
+		// Otherwise use image copy (requires us to manually flip components)
+		VkImageCopy imageCopyRegion{};
+		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		imageCopyRegion.srcSubresource.layerCount = 1;
+		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		imageCopyRegion.dstSubresource.layerCount = 1;
+		imageCopyRegion.extent.width = swapChain.extent.width;
+		imageCopyRegion.extent.height = swapChain.extent.height;
+		imageCopyRegion.extent.depth = 1;
+
+		// Issue the copy command
+		vkCmdCopyImage(
+			cmdBuffers[i],
+			srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			screenImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageCopyRegion);
+
+		// Transition destination image to general layout, which is the required layout for mapping the image memory later on
+		InsertImageMemoryBarrier(
+			cmdBuffers[i],
+			screenImage,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+
+		// Transition back the swap chain image after the blit is done
+		InsertImageMemoryBarrier(
+			cmdBuffers[i],
+			srcImage,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+
+
+		if (vkEndCommandBuffer(cmdBuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to end command buffer!");
+		}
+	}
+}
+
+
+void FVulkanScreenGrab::Submit(VkQueue queue, uint32_t bufferindex)
+{
+	VkSubmitInfo submitInfo = FVulkanInitializers::SubmitInfo();
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuffers[bufferindex];
+
+	vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(queue);
+
+	writeDepthToFile = true;
+}
+
+void FVulkanScreenGrab::Destroy(FVulkanDevice vulkanDevice)
+{
+	vkDestroyImage(vulkanDevice.logicalDevice, screenImage, nullptr);
+	vkFreeMemory(vulkanDevice.logicalDevice, screenImageMemory, nullptr);
 }
