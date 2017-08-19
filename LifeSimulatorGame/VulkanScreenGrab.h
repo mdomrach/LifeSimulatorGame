@@ -4,17 +4,19 @@
 #include "VulkanBuffer.h"
 #include <vector>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+
 class FVulkanDevice;
 class FVulkanSwapChain;
 class FGameManager;
 class FInputManager;
 class FVulkanApplication;
+class FScene;
 
 class FVulkanScreenGrab
 {
 public:
-
-
 	void ProcessInput();
 	void Initialize(FGameManager* GameManager);
 	void CreateCommandBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, FVulkanSwapChain swapChain);
@@ -43,6 +45,7 @@ private:
 	void MapMemory(FVulkanDevice vulkanDevice);
 	FInputManager* inputManager;
 	FVulkanApplication* vulkanApplication;
+	FScene* scene;
 
 	bool isScreenShot;
 	bool submitGrabDepth;
@@ -51,5 +54,13 @@ private:
 
 	const char* data;
 	float totalDepth = 0;
+
+
+	glm::vec3 UnProject
+	(
+		glm::vec3 const & win,
+		glm::mat4 const & model,
+		glm::mat4  const & proj
+		);
 };
 

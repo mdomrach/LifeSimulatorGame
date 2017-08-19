@@ -16,14 +16,20 @@
 
 #include "GameManager.h"
 #include "InputManager.h"
+#include "Scene.h"
+#include "Camera.h"
 
 //#define GLM_FORCE_RADIANS
 //#include <glm/glm.hpp>
+
+#include <glm/gtc/matrix_transform.hpp>
 
 void FVulkanScreenGrab::Initialize(FGameManager* gameManager)
 {
 	inputManager = gameManager->inputManager;
 	vulkanApplication = gameManager->vulkanApplication;
+	scene = gameManager->scene;
+
 	inputManager->MonitorKeyState(GLFW_KEY_P);
 	isScreenShot = false;
 	data = nullptr;
@@ -32,19 +38,13 @@ void FVulkanScreenGrab::Initialize(FGameManager* gameManager)
 
 void FVulkanScreenGrab::ProcessInput()
 {
-	//if (writeDepthToFile)
-	//{
-	//	WriteDepthToFile(vulkanApplication->vulkanDevice, vulkanApplication->swapChain, "Depth.ppm");
-	//	writeDepthToFile = false;
-	//}
-
 	MapMemory(vulkanApplication->vulkanDevice);
 	OutputCurrentMousePosDepth(vulkanApplication->swapChain);
 }
 
 void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)
 {
-	if (data == nullptr && writeDepthToFile)
+	if (data == nullptr)
 		return;
 
 	auto width = swapChain.extent.width;
@@ -71,15 +71,58 @@ void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)
 	auto temp = *currentDepth;
 	//std::cout << temp << " " << currentYMousePos << " " << currentXMousePos << " " << offsetToCurrentMousePos << std::endl;
 	//std::cout << temp << std::endl;
-	totalDepth += temp;
-	if (totalDepth > 1000)
-	{
-		totalDepth = 0;
-	}
+
+	//auto screenPosition = glm::vec3(inputManager->currentXMousePos / 800, 1 - inputManager->currentYMousePos / 600, temp);
+	auto screenPosition = glm::vec3(inputManager->currentXMousePos, 600-inputManager->currentYMousePos, temp);
+	auto worldPosition = glm::unProject(screenPosition, scene->camera->view, scene->camera->proj, glm::vec4(0, 0, 800, 600));
+	//auto worldPosition = UnProject(screenPosition, scene->camera->view, scene->camera->proj);
+
+	//auto worldPosition = glm::inverse(scene->camera->view) * glm::inverse(scene->camera->proj) * screenPosition;
+
+		//gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
+
+	auto worldXPosition = (inputManager->currentXMousePos / 800) * 16 - 8;
+	auto worldYPosition = (inputManager->currentYMousePos / 600) * -16 + 8;
+	inputManager->HitPoint.x = worldXPosition;
+	inputManager->HitPoint.y = worldYPosition;
+	inputManager->HitPoint.z = 0;
+
+	inputManager->HitPoint.x = worldPosition.x;
+	inputManager->HitPoint.y = worldPosition.y;
+	inputManager->HitPoint.z = worldPosition.z;
+	//inputManager->HitPoint.z = 0;
+
+	std::cout << "Screen1: " << inputManager->currentXMousePos << " " << inputManager->currentYMousePos << std::endl;
+	std::cout << "Screen2: " << worldXPosition << " " << worldYPosition << std::endl;
+	std::cout << "World:   " << worldPosition.x << " " << worldPosition.y << " " << worldPosition.z << std::endl;
 }
+
+glm::vec3 FVulkanScreenGrab::UnProject
+(
+	glm::vec3 const & win,
+	glm::mat4 const & model,
+	glm::mat4  const & proj
+)
+{
+	glm::mat4 Inverse = inverse(proj * model);
+
+	glm::vec4 tmp = glm::vec4(win, 1);
+#		if GLM_DEPTH_CLIP_SPACE == GLM_DEPTH_ZERO_TO_ONE
+	tmp.x = tmp.x * static_cast<T>(2) - static_cast<T>(1);
+	tmp.y = tmp.y * static_cast<T>(2) - static_cast<T>(1);
+#		else
+	tmp = tmp * 2.0f - 1.0f;
+#		endif
+
+	glm::vec4 obj = Inverse * tmp;
+	obj /= obj.w;
+
+	return glm::vec3(obj);
+}
+
 void FVulkanScreenGrab::MapMemory(FVulkanDevice vulkanDevice)
 {
-	if (data != nullptr)
+	if (data != nullptr || !writeDepthToFile)
 		return;
 
 	// Get layout of the image (including row pitch)
@@ -129,7 +172,7 @@ void FVulkanScreenGrab::WriteDepthToFile(FVulkanDevice vulkanDevice, FVulkanSwap
 	}
 	file.close();
 
-	std::cout << "Depth Screenshot saved to disk" << std::endl;
+	//std::cout << "Depth Screenshot saved to disk" << std::endl;
 }
 
 void FVulkanScreenGrab::InsertImageMemoryBarrier(

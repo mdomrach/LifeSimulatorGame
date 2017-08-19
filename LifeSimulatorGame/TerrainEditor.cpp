@@ -5,12 +5,14 @@
 #include "InputManager.h"
 #include "VulkanApplication.h"
 #include "Terrain.h"
+#include "Scene.h"
 
 void FTerrainEditor::Initialize(FGameManager* GameManager)
 {
 	inputManager = GameManager->inputManager;
 	terrain = GameManager->terrain;
 	timeManager = GameManager->timeManager;
+	scene = GameManager->scene;
 
 
 	inputManager->MonitorMouseState(GLFW_MOUSE_BUTTON_LEFT);
@@ -36,10 +38,10 @@ void FTerrainEditor::ProcessInput()
 	}
 
 
+	glm::vec2 hitPosition = GetHitPosition();
 	if (inputManager->GetMouseState(GLFW_MOUSE_BUTTON_LEFT))
 	{
 		float maxHeightChange = timeManager->deltaFrameTime;
-		glm::vec2 hitPosition = GetHitPosition();
 
 		switch (terraformMode)
 		{
@@ -120,9 +122,9 @@ void FTerrainEditor::Raise(glm::vec2 hitPosition, float maxHeightChange)
 
 glm::vec2 FTerrainEditor::GetHitPosition()
 {
-	auto xPosition = (inputManager->currentXMousePos / 800) * 16 - 8;
-	auto yPosition = (inputManager->currentYMousePos / 600) * -16 + 8;
-	return glm::vec2(xPosition, yPosition);
+	scene->position = inputManager->HitPoint;
+
+	return glm::vec2(inputManager->HitPoint);
 }
 
 float FTerrainEditor::MoveTo(float current, float target, float maxDelta)

@@ -6,12 +6,12 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 #include <unordered_map>
-#include "Vertex.h"
+#include "TerrainVertex.h"
 #include "Terrain.h"
 
 void FSceneCalculator::LoadScene(FScene* scene, int width, int height)
 {
-	//scene->mesh = LoadMesh();
+	scene->mesh = LoadMesh();
 	scene->camera = LoadCamera(width, height);
 	//scene->terrain = LoadTerrain();
 }
@@ -20,47 +20,66 @@ FMesh* FSceneCalculator::LoadMesh()
 {
 	auto mesh = new FMesh();
 	
-	tinyobj::attrib_t attrib;
-	std::vector<tinyobj::shape_t> shapes;
-	std::vector<tinyobj::material_t> materials;
-	std::string Err;
+	mesh->vertices = {
+		{ { -0.2f, -0.2f, 0.0f },{ -0.707f, -0.707f, 0.0f } },
+		{ { 0.2f, -0.2f, 0.0f },{ 0.707f, -0.707f, 0.0f } },
+		{ { 0.2f, -0.2f, 3.0f },{ 0.707f, -0.707f, 0.0f } },
+		{ { -0.2f, -0.2f, 3.0f },{ -0.707f, -0.707f, 0.0f } },
+		{ { -0.2f, 0.2f, 0.0f },{ -0.707f, 0.707f, 0.0f } },
+		{ { 0.2f, 0.2f, 0.0f },{ 0.707f, 0.707f, 0.0f } },
+		{ { 0.2f, 0.2f, 3.0f },{ 0.707f, 0.707f, 0.0f } },
+		{ { -0.2f, 0.2f, 3.0f },{ -0.707f, 0.707f, 0.0f } },
+	};
+
+	mesh->indices = {
+		0, 1, 2, 2, 3, 0,
+		4, 6, 5, 6, 4, 7,
+		0, 3, 4, 3, 7, 4,
+		1, 5, 2, 2, 5, 6,
+		2, 6, 3, 3, 6, 7,
+	};
+
+	//tinyobj::attrib_t attrib;
+	//std::vector<tinyobj::shape_t> shapes;
+	//std::vector<tinyobj::material_t> materials;
+	//std::string Err;
 
 
-	std::string MODEL_PATH2 = "Models/chalet.obj";
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &Err, MODEL_PATH2.c_str()))
-	{
-		throw std::runtime_error(Err);
-	}
+	//std::string MODEL_PATH2 = "Models/chalet.obj";
+	//if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &Err, MODEL_PATH2.c_str()))
+	//{
+	//	throw std::runtime_error(Err);
+	//}
 
-	std::unordered_map<FVertex, uint32_t> uniqueVertices = {};
-	for (const auto& shape : shapes)
-	{
-		for (const auto& index : shape.mesh.indices)
-		{
-			FVertex vertex = {};
+	//std::unordered_map<FVertex, uint32_t> uniqueVertices = {};
+	//for (const auto& shape : shapes)
+	//{
+	//	for (const auto& index : shape.mesh.indices)
+	//	{
+	//		FVertex vertex = {};
 
-			vertex.pos = {
-				attrib.vertices[3 * index.vertex_index + 0],
-				attrib.vertices[3 * index.vertex_index + 1],
-				attrib.vertices[3 * index.vertex_index + 2]
-			};
+	//		vertex.pos = {
+	//			attrib.vertices[3 * index.vertex_index + 0],
+	//			attrib.vertices[3 * index.vertex_index + 1],
+	//			attrib.vertices[3 * index.vertex_index + 2]
+	//		};
 
-			vertex.texCoord = {
-				attrib.texcoords[2 * index.texcoord_index + 0],
-				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-			};
+	//		vertex.texCoord = {
+	//			attrib.texcoords[2 * index.texcoord_index + 0],
+	//			1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+	//		};
 
-			vertex.color = { 0.0f, 0.0f, 0.0f };
+	//		vertex.color = { 0.0f, 0.0f, 0.0f };
 
-			if (uniqueVertices.count(vertex) == 0)
-			{
-				uniqueVertices[vertex] = static_cast<uint32_t>((uint32_t)mesh->vertices.size());
-				mesh->vertices.push_back(vertex);
-			}
+	//		if (uniqueVertices.count(vertex) == 0)
+	//		{
+	//			uniqueVertices[vertex] = static_cast<uint32_t>((uint32_t)mesh->vertices.size());
+	//			mesh->vertices.push_back(vertex);
+	//		}
 
-			mesh->indices.push_back(uniqueVertices[vertex]);
-		}
-	}
+	//		mesh->indices.push_back(uniqueVertices[vertex]);
+	//	}
+	//}
 
 	return mesh;
 }

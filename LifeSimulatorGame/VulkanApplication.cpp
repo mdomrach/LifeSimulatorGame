@@ -106,12 +106,12 @@ void FVulkanApplication::LoadScene()
 
 void FVulkanApplication::PrepareToDisplayScene()
 {
-	//environment.CreateBuffers(scene, vulkanDevice, commandPool, graphicsQueue);
+	environment.CreateBuffers(scene, vulkanDevice, commandPool, graphicsQueue);
 	//particleFire.CreateBuffers(vulkanDevice);
 	terrain.CreateBuffers(vulkanDevice, commandPool, graphicsQueue);
 	CreateDescriptorPool();
 
-	//environment.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
+	environment.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
 	//particleFire.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
 	terrain.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
 	CreateCommandBuffers();
@@ -260,7 +260,7 @@ void FVulkanApplication::CleanupSwapChain()
 
 	vkFreeCommandBuffers(vulkanDevice.logicalDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-	//vkDestroyPipeline(vulkanDevice.logicalDevice, environment.graphicsPipeline, nullptr);
+	vkDestroyPipeline(vulkanDevice.logicalDevice, environment.graphicsPipeline, nullptr);
 	//vkDestroyPipeline(vulkanDevice.logicalDevice, particleFire.graphicsPipeline, nullptr);
 	vkDestroyPipeline(vulkanDevice.logicalDevice, terrain.graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(vulkanDevice.logicalDevice, pipelineLayout, nullptr);
@@ -276,14 +276,14 @@ void FVulkanApplication::Cleanup()
 {
 	CleanupSwapChain();
 
-	//environment.Destroy(vulkanDevice);
+	environment.Destroy(vulkanDevice);
 	//particleFire.Destroy(vulkanDevice);
 
 	vkDestroyDescriptorPool(vulkanDevice.logicalDevice, descriptorPool, nullptr);
 
 	vkDestroyDescriptorSetLayout(vulkanDevice.logicalDevice, descriptorSetLayout, nullptr);
 
-	//environment.DestroyBuffers(vulkanDevice);
+	environment.DestroyBuffers(vulkanDevice);
 	//particleFire.DestroyBuffers(vulkanDevice);
 	terrain.DestroyBuffers(vulkanDevice);
 
@@ -506,7 +506,10 @@ void FVulkanApplication::CreateDescriptorSetLayout()
 	{
 		throw std::runtime_error("failed to create descriptor set layout!");
 	}
+}
 
+void FVulkanApplication::CreateGraphicsPipeline()
+{
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = FVulkanInitializers::PipelineLayoutCreateInfo();
 	pipelineLayoutInfo.setLayoutCount = 1;
 	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
@@ -517,13 +520,10 @@ void FVulkanApplication::CreateDescriptorSetLayout()
 	{
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
-}
 
-void FVulkanApplication::CreateGraphicsPipeline()
-{
 	VkGraphicsPipelineCreateInfo* pipelineInfo = FVulkanPipelineCalculator::CreateGraphicsPipelineInfo(swapChain, descriptorSetLayout, vulkanDevice.logicalDevice, renderPass, pipelineLayout);
 
-	//environment.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
+	environment.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
 	//particleFire.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
 	terrain.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
 
@@ -584,7 +584,7 @@ void FVulkanApplication::BuildCommandBuffers()
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		//environment.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
+		environment.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
 		//particleFire.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
 		terrain.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
 
@@ -722,7 +722,7 @@ void FVulkanApplication::OnWindowResized(GLFWwindow* window, int width, int heig
 
 void FVulkanApplication::UpdateUniformBuffer()
 {
-	//environment.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
+	environment.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
 	//particleFire.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
 	//particleFire.UpdateParticles();
 	terrain.UpdateFrame(vulkanDevice.logicalDevice, scene);

@@ -15,14 +15,15 @@
 #include "Camera.h"
 #include "Mesh.h"
 #include "VulkanTextureCreateInfo.h"
+#include "TerrainVertex.h"
 
-void FEnvironment::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue queue)
-{
-	FVulkanTextureCreateInfo textureCreateInfo = {};
-	textureCreateInfo.filename = TEXTURE_PATH;
-	textureCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-	textureCreateInfo.Create(vulkanDevice, commandPool, queue, texture);
-}
+//void FEnvironment::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue queue)
+//{
+//	FVulkanTextureCreateInfo textureCreateInfo = {};
+//	textureCreateInfo.filename = TEXTURE_PATH;
+//	textureCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+//	textureCreateInfo.Create(vulkanDevice, commandPool, queue, texture);
+//}
 
 void FEnvironment::Destroy(FVulkanDevice vulkanDevice)
 {
@@ -42,8 +43,8 @@ void FEnvironment::PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCre
 	pipelineInfo->pDepthStencilState = CreatePipelineDepthStencilStateCreateInfo();
 	pipelineInfo->pColorBlendState = CreatePipelineColorBlendStateCreateInfo();
 
-	auto vertShaderCode = FFileCalculator::ReadFile("shaders/model.vert.spv");
-	auto fragShaderCode = FFileCalculator::ReadFile("shaders/model.frag.spv");
+	auto vertShaderCode = FFileCalculator::ReadFile("shaders/terrain.vert.spv");
+	auto fragShaderCode = FFileCalculator::ReadFile("shaders/terrain.frag.spv");
 
 	VkShaderModule vertShaderModule = FShaderCalculator::CreateShaderModule(logicalDevice, vertShaderCode);
 	VkShaderModule fragShaderModule = FShaderCalculator::CreateShaderModule(logicalDevice, fragShaderCode);
@@ -62,8 +63,8 @@ void FEnvironment::PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCre
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 	shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
-	auto vertexBindingDescription = FVertex::GetVertexBindingDescription();
-	auto vertexAttributeDescriptions = FVertex::GetVertexAttributeDescriptions();
+	auto vertexBindingDescription = FTerrainVertex::GetVertexBindingDescription();
+	auto vertexAttributeDescriptions = FTerrainVertex::GetVertexAttributeDescriptions();
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = FVulkanInitializers::PipelineVertexInputStateCreateInfo();
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -112,7 +113,7 @@ void FEnvironment::CreateDescriptorSets(VkDevice logicalDevice, VkDescriptorSetL
 	imageInfo.imageView = texture.imageView;
 	imageInfo.sampler = texture.sampler;
 
-	std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
+	std::array<VkWriteDescriptorSet, 1> descriptorWrites = {};
 	descriptorWrites[0] = FVulkanInitializers::WriteDescriptorSet();
 	descriptorWrites[0].dstSet = descriptorSet;
 	descriptorWrites[0].dstBinding = 0;
@@ -121,13 +122,13 @@ void FEnvironment::CreateDescriptorSets(VkDevice logicalDevice, VkDescriptorSetL
 	descriptorWrites[0].descriptorCount = 1;
 	descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-	descriptorWrites[1] = FVulkanInitializers::WriteDescriptorSet();
-	descriptorWrites[1].dstSet = descriptorSet;
-	descriptorWrites[1].dstBinding = 1;
-	descriptorWrites[1].dstArrayElement = 0;
-	descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorWrites[1].descriptorCount = 1;
-	descriptorWrites[1].pImageInfo = &imageInfo;
+	//descriptorWrites[1] = FVulkanInitializers::WriteDescriptorSet();
+	//descriptorWrites[1].dstSet = descriptorSet;
+	//descriptorWrites[1].dstBinding = 1;
+	//descriptorWrites[1].dstArrayElement = 0;
+	//descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	//descriptorWrites[1].descriptorCount = 1;
+	//descriptorWrites[1].pImageInfo = &imageInfo;
 
 	vkUpdateDescriptorSets(logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
@@ -140,6 +141,7 @@ void FEnvironment::CreateUniformBuffer(FVulkanDevice vulkanDevice)
 	FVulkanBufferCalculator::CreateBuffer(vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, uniformBuffer.buffer, uniformBuffer.bufferMemory);
 }
 
+#include <glm/gtc/matrix_transform.hpp>
 void FEnvironment::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
 {
 	//static auto startTime = std::chrono::high_resolution_clock::now();
@@ -148,7 +150,9 @@ void FEnvironment::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
 	//float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
 
 	FUniformBufferObject uniformBufferObject = {};
-	uniformBufferObject.model = glm::mat4();
+	uniformBufferObject.model = glm::translate(glm::mat4(), scene->position);
+
+	
 	//uniformBufferObject.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	//uniformBufferObject.model = glm::rotate(glm::mat4(), startFrameTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	//uniformBufferObject.model = glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));

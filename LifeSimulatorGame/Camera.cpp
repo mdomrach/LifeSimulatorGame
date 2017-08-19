@@ -14,5 +14,5 @@ FCamera::FCamera(int width, int height)
 	transform = glm::translate(transform, position);
 	view = transform;
 
-	proj = glm::perspective(glm::radians(45.0f), width / (float)height, 0.1f, 200.0f);
+	proj = glm::perspective(glm::radians(45.0f), width / (float)height, 1.0f, 200.0f);
 }

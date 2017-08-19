@@ -206,7 +206,7 @@ void FParticleFire::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
 	
 	//uniformBufferObject.view = scene->camera->view;
 	uniformBufferObject.projection = scene->camera->proj;
-	uniformBufferObject.projection[1][1] *= -1;
+	//uniformBufferObject.projection[1][1] *= -1;
 
 	//uniformBufferObject.viewportDim = glm::vec2((float)FVulkanApplication::WIDTH, (float)FVulkanApplication::HEIGHT);
 	uniformBufferObject.viewportDim = glm::vec2(800, 600);

@@ -4,6 +4,9 @@
 struct GLFWwindow;
 class FGameManager;
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+
 class FInputManager
 {
 private:
@@ -16,6 +19,8 @@ public:
 
 	float currentXMousePos;
 	float currentYMousePos;
+
+	glm::vec3 HitPoint;
 
 	void Initialize(FGameManager* GameManager);
 

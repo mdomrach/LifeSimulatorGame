@@ -7,7 +7,7 @@
 #include "VulkanSwapChain.h"
 #include "VulkanBuffer.h"
 #include "VulkanDevice.h"
-//#include "Environment.h"
+#include "Environment.h"
 #include "ParticleFire.h"
 #include "VulkanTerrain.h"
 
@@ -33,7 +33,7 @@ public:
 private:
 	FScene* scene;
 	
-	const uint32_t WIDTH = 800;;
+	const uint32_t WIDTH = 800;
 	const uint32_t HEIGHT = 600;
 
 	const std::vector<const char*> validationLayers = 
@@ -71,7 +71,7 @@ public:
 
 	VkDescriptorPool descriptorPool;
 
-	//FEnvironment environment;
+	FEnvironment environment;
 	//FParticleFire particleFire;
 	FVulkanTerrain terrain;
 

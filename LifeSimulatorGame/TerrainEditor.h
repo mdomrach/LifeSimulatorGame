@@ -4,6 +4,7 @@ class FInputManager;
 class FTerrain;
 class FGameManager;
 class FTimeManager;
+class FScene;
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -13,6 +14,7 @@ class FTerrainEditor
 private:
 	enum TerraformMode { raise, lower, flatten };
 
+	FScene* scene;
 	FInputManager* inputManager;
 	FTerrain* terrain;
 	FTimeManager* timeManager;

@@ -46,13 +46,13 @@ void FGameManager::MainLoop()
 		timeManager->UpdateTime();
 		inputManager->ProcessInput();
 		cameraController->ProcessInput();
-		terrainEditor->ProcessInput();
 		screenGrab->ProcessInput();
+		terrainEditor->ProcessInput();
 
 		vulkanApplication->UpdateUniformBuffer();
 		vulkanApplication->DrawFrame();
 
-		//FSleepCalculator::SleepUntilWaitTime(timeManager->deltaFrameTime);
+		FSleepCalculator::SleepUntilWaitTime(timeManager->deltaFrameTime);
 	}
 
 	vkDeviceWaitIdle(vulkanApplication->vulkanDevice.logicalDevice);
