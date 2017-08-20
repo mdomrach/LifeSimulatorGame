@@ -19,12 +19,21 @@
 
 class FVulkanApplication;
 class FVulkanDevice;
+class FTimeManager;
 
 class FTextOverlay
 {
 public:
-
 	enum ETextAlign { alignLeft, alignCenter, alignRight };
+
+	void Initialize(FVulkanApplication* vulkanApplication, FVulkanDevice vulkanDevice);
+	void Destroy(FVulkanDevice* vulkanDevice);
+
+	void UpdateFrame(FVulkanDevice vulkanDevice);
+
+	void Submit(VkQueue queue, uint32_t bufferindex);
+
+private:
 
 	//references
 	VkQueue queue;
@@ -61,16 +70,20 @@ public:
 
 	uint32_t numLetters;
 	stb_fontchar stbFontData[STB_NUM_CHARS];
-	void Initialize(FVulkanApplication* application, std::vector<VkPipelineShaderStageCreateInfo> shaderStages);
-	void Destroy(FVulkanDevice* vulkanDevice);
-private:
+	void InitializeHelper(FVulkanApplication* application, std::vector<VkPipelineShaderStageCreateInfo> shaderStages);
+
 	void PrepareResources(FVulkanApplication* application);
 	void PrepareRenderPass(FVulkanApplication* application);
 	void PreparePipeline(FVulkanApplication* application);
-public:
-	void BeginTextUpdate(FVulkanDevice* vulkanDevice);
+
+	void BeginTextUpdate(FVulkanDevice vulkanDevice);
 	void AddText(std::string text, float x, float y, ETextAlign align);
-	void EndTextUpdate(FVulkanDevice* vulkanDevice);
+	void EndTextUpdate(FVulkanDevice vulkanDevice);
 	void UpdateCommandBuffers();
-	void Submit(VkQueue queue, uint32_t bufferindex);
+
+	void UpdateTextOverlay(FVulkanDevice vulkanDevice);
+	int frameCount;
+	float nextFPSUpdateTime;
+
+	FTimeManager* timeManager;
 };

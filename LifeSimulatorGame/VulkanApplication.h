@@ -7,6 +7,7 @@
 #include "VulkanSwapChain.h"
 #include "VulkanBuffer.h"
 #include "VulkanDevice.h"
+#include "Cursor3D.h"
 #include "Environment.h"
 #include "ParticleFire.h"
 #include "VulkanTerrain.h"
@@ -71,6 +72,7 @@ public:
 
 	VkDescriptorPool descriptorPool;
 
+	FVulkanCursor3D cursor3D;
 	FEnvironment environment;
 	//FParticleFire particleFire;
 	FVulkanTerrain terrain;
@@ -117,13 +119,11 @@ public:
 	void CleanupSwapChain();
 	void RecreateSwapChain();
 	static void OnWindowResized(GLFWwindow* window, int width, int height);
-	void UpdateTextOverlay();
-	void PrepareTextOverlay();
 
 	void CreateDescriptorSetLayout();
 	void CreateDescriptorPool();
 	void CreateDepthResources();
 
-	int frameCount;
-	float nextFPSUpdateTime;
+
+	FGameManager* gameManager;
 };

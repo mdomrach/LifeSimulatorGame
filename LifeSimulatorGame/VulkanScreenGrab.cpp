@@ -69,17 +69,9 @@ void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)
 	depths += offsetToCurrentMousePos;
 	float *currentDepth = (float*)depths;
 	auto temp = *currentDepth;
-	//std::cout << temp << " " << currentYMousePos << " " << currentXMousePos << " " << offsetToCurrentMousePos << std::endl;
-	//std::cout << temp << std::endl;
 
-	//auto screenPosition = glm::vec3(inputManager->currentXMousePos / 800, 1 - inputManager->currentYMousePos / 600, temp);
 	auto screenPosition = glm::vec3(inputManager->currentXMousePos, 600-inputManager->currentYMousePos, temp);
 	auto worldPosition = glm::unProject(screenPosition, scene->camera->view, scene->camera->proj, glm::vec4(0, 0, 800, 600));
-	//auto worldPosition = UnProject(screenPosition, scene->camera->view, scene->camera->proj);
-
-	//auto worldPosition = glm::inverse(scene->camera->view) * glm::inverse(scene->camera->proj) * screenPosition;
-
-		//gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
 
 	auto worldXPosition = (inputManager->currentXMousePos / 800) * 16 - 8;
 	auto worldYPosition = (inputManager->currentYMousePos / 600) * -16 + 8;
@@ -87,14 +79,13 @@ void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)
 	inputManager->HitPoint.y = worldYPosition;
 	inputManager->HitPoint.z = 0;
 
-	inputManager->HitPoint.x = worldPosition.x;
-	inputManager->HitPoint.y = worldPosition.y;
-	inputManager->HitPoint.z = worldPosition.z;
-	//inputManager->HitPoint.z = 0;
+	//inputManager->HitPoint.x = worldPosition.x;
+	//inputManager->HitPoint.y = worldPosition.y;
+	//inputManager->HitPoint.z = worldPosition.z;
 
-	std::cout << "Screen1: " << inputManager->currentXMousePos << " " << inputManager->currentYMousePos << std::endl;
-	std::cout << "Screen2: " << worldXPosition << " " << worldYPosition << std::endl;
-	std::cout << "World:   " << worldPosition.x << " " << worldPosition.y << " " << worldPosition.z << std::endl;
+	//std::cout << "Screen1: " << inputManager->currentXMousePos << " " << inputManager->currentYMousePos << std::endl;
+	//std::cout << "Screen2: " << worldXPosition << " " << worldYPosition << std::endl;
+	//std::cout << "World:   " << worldPosition.x << " " << worldPosition.y << " " << worldPosition.z << std::endl;
 }
 
 glm::vec3 FVulkanScreenGrab::UnProject

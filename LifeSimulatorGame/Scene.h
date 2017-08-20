@@ -10,6 +10,7 @@ class FScene
 {
 public:
 	FMesh* mesh;
+	FMesh* mesh2;
 	glm::vec3 position;
 
 	FCamera* camera;

@@ -7,9 +7,45 @@
 #include "VulkanInitializers.h"
 #include "VulkanCalculator.h"
 #include "VulkanCommandBufferCalculator.h"
+#include "FileCalculator.h"
+#include "ShaderCalculator.h"
+#include "TimeManager.h"
 
-void FTextOverlay::Initialize(FVulkanApplication* application, std::vector<VkPipelineShaderStageCreateInfo> shaderStages)
+void FTextOverlay::Initialize(FVulkanApplication* vulkanApplication, FVulkanDevice vulkanDevice)
 {
+	// Load the text rendering shaders
+
+	auto vertShaderCode = FFileCalculator::ReadFile("shaders/text.vert.spv");
+	auto fragShaderCode = FFileCalculator::ReadFile("shaders/text.frag.spv");
+
+	VkShaderModule vertShaderModule = FShaderCalculator::CreateShaderModule(vulkanDevice.logicalDevice, vertShaderCode);
+	VkShaderModule fragShaderModule = FShaderCalculator::CreateShaderModule(vulkanDevice.logicalDevice, fragShaderCode);
+
+	VkPipelineShaderStageCreateInfo vertShaderStageInfo = FVulkanInitializers::PipelineShaderStageCreateInfo();
+	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vertShaderStageInfo.module = vertShaderModule;
+	vertShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo fragShaderStageInfo = FVulkanInitializers::PipelineShaderStageCreateInfo();
+	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageInfo.module = fragShaderModule;
+	fragShaderStageInfo.pName = "main";
+
+	std::vector<VkPipelineShaderStageCreateInfo> textshaderStages = { vertShaderStageInfo, fragShaderStageInfo };
+
+	InitializeHelper(vulkanApplication, textshaderStages);
+
+	UpdateTextOverlay(vulkanDevice);
+
+	vkDestroyShaderModule(vulkanDevice.logicalDevice, vertShaderModule, nullptr);
+	vkDestroyShaderModule(vulkanDevice.logicalDevice, fragShaderModule, nullptr);
+}
+
+void FTextOverlay::InitializeHelper(FVulkanApplication* application, std::vector<VkPipelineShaderStageCreateInfo> shaderStages)
+{
+	frameCount = 0;
+	this->timeManager = application->timeManager;
+
 	this->shaderStages = shaderStages;
 	this->frameBufferHeight = &application->swapChain.extent.height;
 	this->frameBufferWidth = &application->swapChain.extent.width;
@@ -481,9 +517,9 @@ void FTextOverlay::PreparePipeline(FVulkanApplication* application)
 	}
 }
 
-void FTextOverlay::BeginTextUpdate(FVulkanDevice* vulkanDevice)
+void FTextOverlay::BeginTextUpdate(FVulkanDevice vulkanDevice)
 {
-	if (vkMapMemory(vulkanDevice->logicalDevice, vertexBuffer.bufferMemory, 0, VK_WHOLE_SIZE, 0, (void **)&mapped) != VK_SUCCESS)
+	if (vkMapMemory(vulkanDevice.logicalDevice, vertexBuffer.bufferMemory, 0, VK_WHOLE_SIZE, 0, (void **)&mapped) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to map memory!");
 	}
@@ -558,9 +594,9 @@ void FTextOverlay::AddText(std::string text, float x, float y, ETextAlign align)
 	}
 }
 
-void FTextOverlay::EndTextUpdate(FVulkanDevice* vulkanDevice)
+void FTextOverlay::EndTextUpdate(FVulkanDevice vulkanDevice)
 {
-	vkUnmapMemory(vulkanDevice->logicalDevice, vertexBuffer.bufferMemory);
+	vkUnmapMemory(vulkanDevice.logicalDevice, vertexBuffer.bufferMemory);
 	mapped = nullptr;
 	UpdateCommandBuffers();
 }
@@ -635,4 +671,28 @@ void FTextOverlay::Submit(VkQueue queue, uint32_t bufferindex)
 
 	vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(queue);
+}
+
+void FTextOverlay::UpdateTextOverlay(FVulkanDevice vulkanDevice)
+{
+	BeginTextUpdate(vulkanDevice);
+
+	int fps = frameCount;
+	std::string timeText = std::to_string(fps);
+	AddText(timeText, 5.0f, 5.0f, FTextOverlay::alignLeft);
+
+	EndTextUpdate(vulkanDevice);
+}
+
+
+
+void FTextOverlay::UpdateFrame(FVulkanDevice vulkanDevice)
+{
+	frameCount++;
+	if (timeManager->startFrameTime > nextFPSUpdateTime)
+	{
+		UpdateTextOverlay(vulkanDevice);
+		frameCount = 0;
+		nextFPSUpdateTime++;
+	}
 }

@@ -15,23 +15,10 @@ class FTerrain;
 
 class FVulkanTerrain
 {
-public:
-	void *verticesMemory;
-	void *indicesMemory;
-
-	FTerrain* terrain;
-
-	VkPipeline graphicsPipeline;
-	VkDescriptorSet descriptorSet;
-
-	FVulkanBuffer uniformBuffer;
-	FVulkanBuffer vertexBuffer;
-	FVulkanBuffer indexBuffer;
-	
+public:	
 	void Initialize(FGameManager* gameManager);
 
 	void LoadAssets();
-	void DestroyBuffers(FVulkanDevice vulkanDevice);
 
 	void PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCreateInfo* pipelineInfo);
 	void CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
@@ -40,10 +27,24 @@ public:
 	void UpdateFrame(VkDevice logicalDevice, FScene* scene);
 
 	void BuildCommandBuffers(VkCommandBuffer commandBuffer, FScene* scene, VkPipelineLayout pipelinelayout);
+
+	void DestroyBuffers(FVulkanDevice vulkanDevice);
+
+private:
 	void UpdateVertexBuffer();
 	void UpdateNormals();
 
-private:
+	void *verticesMemory;
+	void *indicesMemory;
+
+	VkPipeline graphicsPipeline;
+	VkDescriptorSet descriptorSet;
+
+	FTerrain* terrain;
+	FVulkanBuffer uniformBuffer;
+	FVulkanBuffer vertexBuffer;
+	FVulkanBuffer indexBuffer;
+
 	FTimeManager* timeManager;
 
 	void CreateUniformBuffer(FVulkanDevice vulkanDevice);

@@ -35,17 +35,12 @@
 #include "VulkanCalculator.h"
 #include "VulkanCommandBufferCalculator.h"
 #include "VulkanImageCalculator.h"
-#include "Environment.h"
 #include "VulkanPipelineCalculator.h"
 #include "FileCalculator.h"
-#include "ShaderCalculator.h"
-#include "VulkanBufferCalculator.h"
 #include "VulkanScreenGrab.h"
 
 void FVulkanApplication::InitializeVulkan()
 {
-	frameCount = 0;
-
 	InitWindow();
 	if (CreateVulkanInstance() != VK_SUCCESS)
 	{
@@ -65,10 +60,13 @@ void FVulkanApplication::InitializeVulkan()
 
 void FVulkanApplication::Initialize(FGameManager* gameManager)
 {
+	this->gameManager = gameManager;
 	inputManager = gameManager->inputManager;
 	timeManager = gameManager->timeManager;
 	scene = gameManager->scene;
 	screenGrab = gameManager->screenGrab;
+
+	textOverlay = new FTextOverlay();
 
 	//particleFire.Initialize(gameManager);
 	terrain.Initialize(gameManager);
@@ -100,12 +98,14 @@ void FVulkanApplication::LoadScene()
 {
 	//environment.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
 	//particleFire.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
-	terrain.LoadAssets();
-	FSceneCalculator::LoadScene(scene, swapChain.extent.width, swapChain.extent.height);
+	terrain.LoadAssets();	
+	scene->camera = new FCamera(swapChain.extent.width, swapChain.extent.height);
 }
 
 void FVulkanApplication::PrepareToDisplayScene()
 {
+	cursor3D.Initialize(gameManager);
+
 	environment.CreateBuffers(scene, vulkanDevice, commandPool, graphicsQueue);
 	//particleFire.CreateBuffers(vulkanDevice);
 	terrain.CreateBuffers(vulkanDevice, commandPool, graphicsQueue);
@@ -116,7 +116,7 @@ void FVulkanApplication::PrepareToDisplayScene()
 	terrain.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
 	CreateCommandBuffers();
 	BuildCommandBuffers();
-	PrepareTextOverlay();
+	textOverlay->Initialize(this, vulkanDevice);
 	screenGrab->CreateCommandBuffers(vulkanDevice, commandPool, swapChain);
 	screenGrab->BuildCommandBuffers(vulkanDevice, commandPool, swapChain, depthImage, presentQueue);
 	CreateSemaphores();
@@ -246,8 +246,9 @@ VkExtent2D FVulkanApplication::ChoseSwapExtent(const VkSurfaceCapabilitiesKHR& c
 void FVulkanApplication::CleanupSwapChain()
 {
 	screenGrab->Destroy(vulkanDevice);
-
+	cursor3D.Destroy(vulkanDevice);
 	textOverlay->Destroy(&vulkanDevice);
+
 
 	vkDestroyImageView(vulkanDevice.logicalDevice, depthImageView, nullptr);
 	vkDestroyImage(vulkanDevice.logicalDevice, depthImage, nullptr);
@@ -262,7 +263,6 @@ void FVulkanApplication::CleanupSwapChain()
 
 	vkDestroyPipeline(vulkanDevice.logicalDevice, environment.graphicsPipeline, nullptr);
 	//vkDestroyPipeline(vulkanDevice.logicalDevice, particleFire.graphicsPipeline, nullptr);
-	vkDestroyPipeline(vulkanDevice.logicalDevice, terrain.graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(vulkanDevice.logicalDevice, pipelineLayout, nullptr);
 	vkDestroyRenderPass(vulkanDevice.logicalDevice, renderPass, nullptr);
 	for (size_t i = 0; i < swapChain.imageCount; i++)
@@ -282,7 +282,7 @@ void FVulkanApplication::Cleanup()
 	vkDestroyDescriptorPool(vulkanDevice.logicalDevice, descriptorPool, nullptr);
 
 	vkDestroyDescriptorSetLayout(vulkanDevice.logicalDevice, descriptorSetLayout, nullptr);
-
+	
 	environment.DestroyBuffers(vulkanDevice);
 	//particleFire.DestroyBuffers(vulkanDevice);
 	terrain.DestroyBuffers(vulkanDevice);
@@ -655,7 +655,9 @@ void FVulkanApplication::DrawFrame()
 	}
 
 	screenGrab->Submit(graphicsQueue, imageIndex);
+	cursor3D.Submit(graphicsQueue, imageIndex);
 	textOverlay->Submit(graphicsQueue, imageIndex);
+	
 
 	VkPresentInfoKHR presentInfo = FVulkanInitializers::PresentInfoKHR();
 	presentInfo.waitSemaphoreCount = 1;
@@ -704,7 +706,9 @@ void FVulkanApplication::RecreateSwapChain()
 	CreateFrameBuffers();
 	CreateCommandBuffers();
 	BuildCommandBuffers();
-	PrepareTextOverlay();
+	textOverlay->Initialize(this, vulkanDevice);
+	// TODO: Recreate Swap chain for enviroment
+	cursor3D.Initialize(gameManager);
 	screenGrab->CreateCommandBuffers(vulkanDevice, commandPool, swapChain);
 	screenGrab->BuildCommandBuffers(vulkanDevice, commandPool, swapChain, depthImage, presentQueue);
 }
@@ -726,14 +730,7 @@ void FVulkanApplication::UpdateUniformBuffer()
 	//particleFire.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
 	//particleFire.UpdateParticles();
 	terrain.UpdateFrame(vulkanDevice.logicalDevice, scene);
-
-	frameCount++;
-	if (timeManager->startFrameTime > nextFPSUpdateTime)
-	{
-		UpdateTextOverlay();
-		frameCount = 0;
-		nextFPSUpdateTime++;
-	}
+	textOverlay->UpdateFrame(vulkanDevice);
 }
 
 void FVulkanApplication::CreateDescriptorPool()
@@ -765,63 +762,4 @@ void FVulkanApplication::CreateDepthResources()
 	FVulkanImageCalculator::TransitionImageLayout(
 		vulkanDevice.logicalDevice, commandPool, graphicsQueue,
 		depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-}
-
-// Update the text buffer displayed by the text overlay
-void FVulkanApplication::UpdateTextOverlay()
-{
-	textOverlay->BeginTextUpdate(&vulkanDevice);
-
-	//textOverlay->AddText("Life Simulator Game", 5.0f, 5.0f, FTextOverlay::alignLeft);
-
-	//int fps = frameCount;
-	//float timeFor60Frames = 60.0f / fps;
-	//std::string timeText = std::to_string(timeFor60Frames);
-
-	int fps = frameCount;
-	std::string timeText = std::to_string(fps);
-	textOverlay->AddText(timeText, 5.0f, 5.0f, FTextOverlay::alignLeft);
-	//textOverlay->AddText(title, 5.0f, 5.0f, FTextOverlay::alignLeft);
-
-	//std::stringstream ss;
-	//ss << std::fixed << std::setprecision(2) << (frameTimer * 1000.0f) << "ms (" << lastFPS << " fps)";
-	//textOverlay->AddText(ss.str(), 5.0f, 25.0f, ETextOverlay::alignLeft);
-
-	//textOverlay->AddText(deviceProperties.deviceName, 5.0f, 45.0f, FTextOverlay::alignLeft);
-
-	//textOverlay->AddText("Press \"space\" to toggle text overlay", 5.0f, 65.0f, FTextOverlay::alignLeft);
-	//textOverlay->AddText("Hold middle mouse button and drag to move", 5.0f, 85.0f, FTextOverlay::alignLeft);
-
-	textOverlay->EndTextUpdate(&vulkanDevice);
-}
-
-void FVulkanApplication::PrepareTextOverlay()
-{
-	// Load the text rendering shaders
-
-	auto vertShaderCode = FFileCalculator::ReadFile("shaders/text.vert.spv");
-	auto fragShaderCode = FFileCalculator::ReadFile("shaders/text.frag.spv");
-
-	VkShaderModule vertShaderModule = FShaderCalculator::CreateShaderModule(vulkanDevice.logicalDevice, vertShaderCode);
-	VkShaderModule fragShaderModule = FShaderCalculator::CreateShaderModule(vulkanDevice.logicalDevice, fragShaderCode);
-
-	VkPipelineShaderStageCreateInfo vertShaderStageInfo = FVulkanInitializers::PipelineShaderStageCreateInfo();
-	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageInfo.module = vertShaderModule;
-	vertShaderStageInfo.pName = "main";
-
-	VkPipelineShaderStageCreateInfo fragShaderStageInfo = FVulkanInitializers::PipelineShaderStageCreateInfo();
-	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageInfo.module = fragShaderModule;
-	fragShaderStageInfo.pName = "main";
-
-	std::vector<VkPipelineShaderStageCreateInfo> textshaderStages = { vertShaderStageInfo, fragShaderStageInfo };
-
-	textOverlay = new FTextOverlay();
-	textOverlay->Initialize(this, textshaderStages);
-
-	UpdateTextOverlay();
-
-	vkDestroyShaderModule(vulkanDevice.logicalDevice, vertShaderModule, nullptr);
-	vkDestroyShaderModule(vulkanDevice.logicalDevice, fragShaderModule, nullptr);
 }

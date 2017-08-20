@@ -75,9 +75,6 @@
     <ClCompile Include="ParticleFire.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Environment.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VulkanFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -124,6 +121,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VulkanScreenGrab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cursor3D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Environment.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -229,9 +232,6 @@
     <ClInclude Include="ParticleFire.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Environment.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VulkanFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -284,6 +284,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VulkanScreenGrab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cursor3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Environment.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

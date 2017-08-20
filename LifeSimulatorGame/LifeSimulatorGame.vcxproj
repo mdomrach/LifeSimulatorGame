@@ -122,6 +122,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="BufferCreateInfo.cpp" />
     <ClCompile Include="CameraController.cpp" />
+    <ClCompile Include="Cursor3D.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="FileCalculator.cpp" />
     <ClCompile Include="VulkanScreenGrab.cpp" />
@@ -184,6 +185,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BufferCreateInfo.h" />
     <ClInclude Include="CameraController.h" />
+    <ClInclude Include="Cursor3D.h" />
     <ClInclude Include="Environment.h" />
     <ClInclude Include="FileCalculator.h" />
     <ClInclude Include="VulkanScreenGrab.h" />
