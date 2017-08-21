@@ -74,7 +74,7 @@ void FVulkanTextOverlay::Destroy()
 	vkDestroyDescriptorPool(logicalDevice, descriptorPool, nullptr);
 	vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
 	vkDestroyPipelineCache(logicalDevice, pipelineCache, nullptr);
-	vkDestroyPipeline(logicalDevice, pipeline, nullptr);
+	vkDestroyPipeline(logicalDevice, graphicsPipeline, nullptr);
 	vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
 	vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
 }
@@ -427,12 +427,6 @@ void FVulkanTextOverlay::CreateGraphicsPipeline()
 {
 	auto* vulkanDevice = &applicationData->vulkanDevice;
 
-	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = FVulkanInitializers::PipelineInputAssemblyStateCreateInfo();
-	inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-	inputAssemblyState.flags = 0;
-	inputAssemblyState.primitiveRestartEnable = VK_FALSE;
-
-
 	VkPipelineRasterizationStateCreateInfo rasterizationState = FVulkanInitializers::PipelineRasterizationStateCreateInfo();
 	rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
@@ -440,28 +434,6 @@ void FVulkanTextOverlay::CreateGraphicsPipeline()
 	rasterizationState.flags = 0;
 	rasterizationState.depthClampEnable = VK_FALSE;
 	rasterizationState.lineWidth = 1.0f;
-
-
-	VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {};
-	colorBlendAttachmentState.blendEnable = VK_TRUE;
-	colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-
-	VkPipelineColorBlendStateCreateInfo colorBlendState = FVulkanInitializers::PipelineColorBlendStateCreateInfo();
-	colorBlendState.attachmentCount = 1;
-	colorBlendState.pAttachments = &colorBlendAttachmentState;
-
-	VkPipelineDepthStencilStateCreateInfo depthStencilState = FVulkanInitializers::PipelineDepthStencilStateCreateInfo();
-	depthStencilState.depthTestEnable = VK_TRUE;
-	depthStencilState.depthWriteEnable = VK_TRUE;
-	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-	depthStencilState.front = depthStencilState.back;
-	depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
 	
 	VkPipelineViewportStateCreateInfo viewportState = FVulkanInitializers::PipelineViewportStateCreateInfo();
 	viewportState.viewportCount = 1;
@@ -524,21 +496,88 @@ void FVulkanTextOverlay::CreateGraphicsPipeline()
 
 
 	pipelineCreateInfo.pVertexInputState = &inputState;
-	pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
+	pipelineCreateInfo.pInputAssemblyState = CreatePipelineInputAssemblyStateCreateInfo();
 	pipelineCreateInfo.pRasterizationState = &rasterizationState;
-	pipelineCreateInfo.pColorBlendState = &colorBlendState;
+	pipelineCreateInfo.pColorBlendState = CreatePipelineColorBlendStateCreateInfo();
 	pipelineCreateInfo.pMultisampleState = &multisampleState;
 	pipelineCreateInfo.pViewportState = &viewportState;
-	pipelineCreateInfo.pDepthStencilState = &depthStencilState;
+	pipelineCreateInfo.pDepthStencilState = CreatePipelineDepthStencilStateCreateInfo();
 	pipelineCreateInfo.pDynamicState = &dynamicState;
 	pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
 	pipelineCreateInfo.pStages = shaderStages.data();
 
-	if (vkCreateGraphicsPipelines(vulkanDevice->logicalDevice, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS)
+	if (vkCreateGraphicsPipelines(vulkanDevice->logicalDevice, pipelineCache, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
+
+	delete pipelineCreateInfo.pInputAssemblyState;
+	delete pipelineCreateInfo.pColorBlendState->pAttachments;
+	delete pipelineCreateInfo.pColorBlendState;
+	delete pipelineCreateInfo.pDepthStencilState;
 }
+
+VkPipelineInputAssemblyStateCreateInfo* FVulkanTextOverlay::CreatePipelineInputAssemblyStateCreateInfo()
+{
+	VkPipelineInputAssemblyStateCreateInfo* inputAssemblyState = new VkPipelineInputAssemblyStateCreateInfo();
+	inputAssemblyState->sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssemblyState->topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+	inputAssemblyState->flags = 0;
+	inputAssemblyState->primitiveRestartEnable = VK_FALSE;
+	return inputAssemblyState;
+}
+
+VkPipelineColorBlendStateCreateInfo* FVulkanTextOverlay::CreatePipelineColorBlendStateCreateInfo()
+{
+	VkPipelineColorBlendAttachmentState* colorBlendAttachmentState = new VkPipelineColorBlendAttachmentState();
+	colorBlendAttachmentState->blendEnable = VK_TRUE;
+	colorBlendAttachmentState->colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachmentState->srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachmentState->dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachmentState->colorBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachmentState->srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachmentState->dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	//colorBlendAttachment->blendEnable = VK_FALSE;
+	//colorBlendAttachment->srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+	//colorBlendAttachment->dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	//colorBlendAttachment->colorBlendOp = VK_BLEND_OP_ADD;
+	//colorBlendAttachment->srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	//colorBlendAttachment->dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachmentState->alphaBlendOp = VK_BLEND_OP_ADD;
+
+	VkPipelineColorBlendStateCreateInfo* colorBlendState = new VkPipelineColorBlendStateCreateInfo();
+	colorBlendState->sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlendState->attachmentCount = 1;
+	colorBlendState->pAttachments = colorBlendAttachmentState;
+	//colorBlending->logicOpEnable = VK_FALSE;
+	//colorBlending->logicOp = VK_LOGIC_OP_COPY;
+	//colorBlending->blendConstants[0] = 0.0f;
+	//colorBlending->blendConstants[1] = 0.0f;
+	//colorBlending->blendConstants[2] = 0.0f;
+	//colorBlending->blendConstants[3] = 0.0f;
+	return colorBlendState;
+}
+
+VkPipelineDepthStencilStateCreateInfo* FVulkanTextOverlay::CreatePipelineDepthStencilStateCreateInfo()
+{
+	VkPipelineDepthStencilStateCreateInfo* depthStencilState = new VkPipelineDepthStencilStateCreateInfo();
+	depthStencilState->sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencilState->depthTestEnable = VK_TRUE;
+	depthStencilState->depthWriteEnable = VK_TRUE;
+	depthStencilState->depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	//depthStencil->depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencilState->depthBoundsTestEnable = VK_FALSE;
+	depthStencilState->minDepthBounds = 0.0f; // Optional
+	depthStencilState->maxDepthBounds = 1.0f; // Optional
+	depthStencilState->stencilTestEnable = VK_FALSE;
+	depthStencilState->front = {};
+	depthStencilState->back = {};
+	//depthStencilState.front = depthStencilState.back;
+	//depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
+	return depthStencilState;
+}
+
+
 
 void FVulkanTextOverlay::BeginTextUpdate(VkDevice logicalDevice)
 {
@@ -666,7 +705,7 @@ void FVulkanTextOverlay::UpdateCommandBuffers()
 		scissor.offset.y = 0;
 		vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
 
-		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
 
 		VkDeviceSize offsets = 0;

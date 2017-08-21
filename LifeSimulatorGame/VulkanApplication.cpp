@@ -88,7 +88,7 @@ void FVulkanApplication::UpdateSwapChain()
 
 	modelRenderer->UpdateSwapChain(applicationData->vulkanDevice);
 	textOverlay->UpdateSwapChain();
-	cursor3D.UpdateSwapChain(gameManager);
+	cursor3D.UpdateSwapChain();
 	screenGrab->UpdateSwapChain(applicationData->vulkanDevice, this);
 }
 
@@ -264,7 +264,7 @@ VkExtent2D FVulkanApplication::ChoseSwapExtent(const VkSurfaceCapabilitiesKHR& c
 void FVulkanApplication::CleanupSwapChain()
 {
 	screenGrab->Destroy(applicationData->vulkanDevice);
-	cursor3D.Destroy(applicationData->vulkanDevice);
+	cursor3D.Destroy();
 	textOverlay->Destroy();
 
 

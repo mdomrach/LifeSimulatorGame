@@ -44,7 +44,7 @@ private:
 	VkDescriptorSet descriptorSet;
 	VkPipelineLayout pipelineLayout;
 	VkPipelineCache pipelineCache;
-	VkPipeline pipeline;
+	VkPipeline graphicsPipeline;
 	VkRenderPass renderPass;
 	VkCommandPool commandPool;
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -75,6 +75,9 @@ private:
 	void CreatePipelineCache();	
 	void CreateRenderPass();
 	void CreateGraphicsPipeline();
+	VkPipelineInputAssemblyStateCreateInfo* CreatePipelineInputAssemblyStateCreateInfo();
+	VkPipelineColorBlendStateCreateInfo* CreatePipelineColorBlendStateCreateInfo();
+	VkPipelineDepthStencilStateCreateInfo* CreatePipelineDepthStencilStateCreateInfo();
 
 	void BeginTextUpdate(VkDevice logicalDevice);
 	void AddText(std::string text, float x, float y, ETextAlign align);
