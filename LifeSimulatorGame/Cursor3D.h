@@ -14,7 +14,7 @@ class FVulkanApplication;
 class FVulkanCursor3D
 {
 public:	
-	void Initialize(FGameManager* gameManager);
+	void UpdateSwapChain(FGameManager* gameManager);
 	void Destroy(FVulkanDevice vulkanDevice);
 	
 	void UpdateFrame(VkDevice logicalDevice, FScene* scene);

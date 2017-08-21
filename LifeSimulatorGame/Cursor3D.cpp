@@ -21,7 +21,7 @@
 #include "VulkanCalculator.h"
 #include "VulkanPipelineCalculator.h"
 
-void FVulkanCursor3D::Initialize(FGameManager* gameManager)
+void FVulkanCursor3D::UpdateSwapChain(FGameManager* gameManager)
 {
 	this->scene = gameManager->scene;
 

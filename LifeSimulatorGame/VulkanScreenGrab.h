@@ -19,6 +19,7 @@ class FVulkanScreenGrab
 public:
 	void ProcessInput();
 	void Initialize(FGameManager* GameManager);
+	void UpdateSwapChain(FVulkanDevice vulkanDevice, FVulkanApplication* application);
 	void CreateCommandBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, FVulkanSwapChain swapChain);
 	void BuildCommandBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, FVulkanSwapChain swapChain, VkImage srcImage, VkQueue queue);
 	void Submit(VkQueue queue, uint32_t bufferindex);

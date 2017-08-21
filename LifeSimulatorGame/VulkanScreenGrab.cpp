@@ -36,6 +36,12 @@ void FVulkanScreenGrab::Initialize(FGameManager* gameManager)
 	writeDepthToFile = false;
 }
 
+void FVulkanScreenGrab::UpdateSwapChain(FVulkanDevice vulkanDevice, FVulkanApplication* application)
+{
+	CreateCommandBuffers(vulkanDevice, application->commandPool, application->swapChain);
+	BuildCommandBuffers(vulkanDevice, application->commandPool, application->swapChain, application->depthImage, application->graphicsQueue);
+}
+
 void FVulkanScreenGrab::ProcessInput()
 {
 	MapMemory(vulkanApplication->vulkanDevice);

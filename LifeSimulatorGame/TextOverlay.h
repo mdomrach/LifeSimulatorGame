@@ -26,7 +26,7 @@ class FTextOverlay
 public:
 	enum ETextAlign { alignLeft, alignCenter, alignRight };
 
-	void Initialize(FVulkanApplication* vulkanApplication, FVulkanDevice vulkanDevice);
+	void UpdateSwapChain(FVulkanApplication* vulkanApplication, FVulkanDevice vulkanDevice);
 	void Destroy(FVulkanDevice* vulkanDevice);
 
 	void UpdateFrame(FVulkanDevice vulkanDevice);
@@ -45,6 +45,8 @@ private:
 	VkImageView imageView;
 	FVulkanBuffer vertexBuffer;
 	VkDeviceMemory imageMemory;
+
+	// general
 	VkDescriptorPool descriptorPool;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSet descriptorSet;
@@ -54,7 +56,6 @@ private:
 	VkRenderPass renderPass;
 	VkCommandPool commandPool;
 	bool visible = true;
-	//passed
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
 	// reference but empty?

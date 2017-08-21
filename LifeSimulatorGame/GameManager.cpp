@@ -49,7 +49,7 @@ void FGameManager::MainLoop()
 		screenGrab->ProcessInput();
 		terrainEditor->ProcessInput();
 
-		vulkanApplication->UpdateUniformBuffer();
+		vulkanApplication->UpdateFrame();
 		vulkanApplication->DrawFrame();
 
 		FSleepCalculator::SleepUntilWaitTime(timeManager->deltaFrameTime);

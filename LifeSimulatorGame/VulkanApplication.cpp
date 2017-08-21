@@ -38,39 +38,7 @@
 #include "VulkanPipelineCalculator.h"
 #include "FileCalculator.h"
 #include "VulkanScreenGrab.h"
-
-void FVulkanApplication::InitializeVulkan()
-{
-	InitWindow();
-	if (CreateVulkanInstance() != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create instance!");
-	}
-	CreateWindowSurface();
-
-	SetupDevice();
-
-	CreateCommandPool();
-	CreateDescriptorSetLayout();
-
-	// render pass and graphics pipeline
-	InitializeSwapChain();
-
-	LoadScene();
-	cursor3D.Initialize(gameManager);
-	environment.Initialize(gameManager);
-	textOverlay->Initialize(this, vulkanDevice);
-
-	CreateBuffers();
-	CreateDescriptorPool();
-	CreateDescriptorSets();
-	CreateCommandBuffers();
-	BuildCommandBuffers();
-	CreateSemaphores();
-
-	screenGrab->CreateCommandBuffers(vulkanDevice, commandPool, swapChain);
-	screenGrab->BuildCommandBuffers(vulkanDevice, commandPool, swapChain, depthImage, presentQueue);
-}
+#include "VulkanModelRenderer.h"
 
 void FVulkanApplication::Initialize(FGameManager* gameManager)
 {
@@ -80,11 +48,80 @@ void FVulkanApplication::Initialize(FGameManager* gameManager)
 	scene = gameManager->scene;
 	screenGrab = gameManager->screenGrab;
 
+	modelRenderer = new FVulkanModelRenderer();
+	modelRenderer->Initialize(gameManager);
 	textOverlay = new FTextOverlay();
-
-	//particleFire.Initialize(gameManager);
-	terrain.Initialize(gameManager);
 }
+
+void FVulkanApplication::InitializeVulkan()
+{
+
+	InitWindow();
+	if (CreateVulkanInstance() != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create instance!");
+	}
+	CreateWindowSurface();
+
+	SetupDevice();
+	CreateSemaphores(vulkanDevice);
+	CreateCommandPool();
+
+	modelRenderer->InitializeVulkan(vulkanDevice);
+
+	UpdateSwapChain();
+
+	scene->camera = new FCamera(swapChain.extent.width, swapChain.extent.height);
+
+}
+
+void FVulkanApplication::UpdateSwapChain()
+{
+	CreateSwapChain();
+	CreateRenderPass();
+	CreateDepthResources();
+	CreateFrameBuffers();
+
+	modelRenderer->UpdateSwapChain(vulkanDevice);
+	textOverlay->UpdateSwapChain(this, vulkanDevice);
+	cursor3D.UpdateSwapChain(gameManager);
+	screenGrab->UpdateSwapChain(vulkanDevice, this);
+}
+
+void FVulkanApplication::RecreateSwapChain()
+{
+	vkDeviceWaitIdle(vulkanDevice.logicalDevice);
+
+	CleanupSwapChain();
+
+	UpdateSwapChain();
+}
+
+void FVulkanApplication::CreateSemaphores(FVulkanDevice vulkanDevice)
+{
+	VkSemaphoreCreateInfo semaphoreInfo = FVulkanInitializers::SemaphoreCreateInfo();
+
+	if (vkCreateSemaphore(vulkanDevice.logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(vulkanDevice.logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create semaphores!");
+	}
+}
+
+void FVulkanApplication::CreateCommandPool()
+{
+	FQueueFamilyIndices queueFamilyIndices = vulkanDevice.queueFamilyIndices;
+
+	VkCommandPoolCreateInfo poolInfo = FVulkanInitializers::CommandPoolCreateInfo();
+	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+	poolInfo.flags = 0;
+
+	if (vkCreateCommandPool(vulkanDevice.logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create command pool!");
+	}
+}
+
 
 void FVulkanApplication::InitWindow()
 {
@@ -97,37 +134,6 @@ void FVulkanApplication::InitWindow()
 	glfwSetWindowUserPointer(window, this);
 	glfwSetWindowSizeCallback(window, FVulkanApplication::OnWindowResized);
 
-}
-
-void FVulkanApplication::InitializeSwapChain()
-{
-	CreateSwapChain();
-	CreateRenderPass();
-	CreateGraphicsPipeline();
-	CreateDepthResources();
-	CreateFrameBuffers();
-}
-
-void FVulkanApplication::LoadScene()
-{
-	//environment.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
-	//particleFire.LoadAssets(vulkanDevice, commandPool, graphicsQueue);
-	terrain.LoadAssets();	
-	scene->camera = new FCamera(swapChain.extent.width, swapChain.extent.height);
-}
-
-void FVulkanApplication::CreateBuffers()
-{
-	environment.CreateBuffers(scene, vulkanDevice, commandPool, graphicsQueue);
-	//particleFire.CreateBuffers(vulkanDevice);
-	terrain.CreateBuffers(vulkanDevice, commandPool, graphicsQueue);
-}
-
-void FVulkanApplication::CreateDescriptorSets()
-{
-	environment.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
-	//particleFire.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
-	terrain.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
 }
 
 void FVulkanApplication::SetupDevice()
@@ -267,10 +273,10 @@ void FVulkanApplication::CleanupSwapChain()
 		vkDestroyFramebuffer(vulkanDevice.logicalDevice, swapChain.frameBuffers[i], nullptr);
 	}
 
-	vkFreeCommandBuffers(vulkanDevice.logicalDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	modelRenderer->FreeCommandBuffers();
 
-	vkDestroyPipeline(vulkanDevice.logicalDevice, environment.graphicsPipeline, nullptr);
-	//vkDestroyPipeline(vulkanDevice.logicalDevice, particleFire.graphicsPipeline, nullptr);
+	modelRenderer->DestroyPipelines();
+
 	vkDestroyPipelineLayout(vulkanDevice.logicalDevice, pipelineLayout, nullptr);
 	vkDestroyRenderPass(vulkanDevice.logicalDevice, renderPass, nullptr);
 	for (size_t i = 0; i < swapChain.imageCount; i++)
@@ -284,16 +290,10 @@ void FVulkanApplication::Cleanup()
 {
 	CleanupSwapChain();
 
-	environment.Destroy(vulkanDevice);
-	//particleFire.Destroy(vulkanDevice);
+	modelRenderer->Destroy(vulkanDevice);
 
-	vkDestroyDescriptorPool(vulkanDevice.logicalDevice, descriptorPool, nullptr);
 
-	vkDestroyDescriptorSetLayout(vulkanDevice.logicalDevice, descriptorSetLayout, nullptr);
-	
-	environment.DestroyBuffers(vulkanDevice);
-	//particleFire.DestroyBuffers(vulkanDevice);
-	terrain.DestroyBuffers(vulkanDevice);
+	//modelRenderer->DestroyBuffers(vulkanDevice);
 
 	vkDestroySemaphore(vulkanDevice.logicalDevice, renderFinishedSemaphore, nullptr);
 	vkDestroySemaphore(vulkanDevice.logicalDevice, imageAvailableSemaphore, nullptr);
@@ -482,129 +482,6 @@ void FVulkanApplication::CreateRenderPass()
 	}
 }
 
-void FVulkanApplication::CreateDescriptorSetLayout()
-{
-	VkDescriptorSetLayoutBinding uniformBufferObjectLayoutBinding = {};
-	uniformBufferObjectLayoutBinding.binding = 0;
-	uniformBufferObjectLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uniformBufferObjectLayoutBinding.descriptorCount = 1;
-	uniformBufferObjectLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	uniformBufferObjectLayoutBinding.pImmutableSamplers = nullptr;
-
-	VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-	samplerLayoutBinding.binding = 1;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	VkDescriptorSetLayoutBinding sampler2LayoutBinding = {};
-	sampler2LayoutBinding.binding = 2;
-	sampler2LayoutBinding.descriptorCount = 1;
-	sampler2LayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	sampler2LayoutBinding.pImmutableSamplers = nullptr;
-	sampler2LayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uniformBufferObjectLayoutBinding, samplerLayoutBinding, sampler2LayoutBinding };
-	VkDescriptorSetLayoutCreateInfo layoutInfo = FVulkanInitializers::DescriptorSetLayoutCreateInfo();
-	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-	layoutInfo.pBindings = bindings.data();
-
-	if (vkCreateDescriptorSetLayout(vulkanDevice.logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create descriptor set layout!");
-	}
-}
-
-void FVulkanApplication::CreateGraphicsPipeline()
-{
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo = FVulkanInitializers::PipelineLayoutCreateInfo();
-	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = 0;
-
-	if (vkCreatePipelineLayout(vulkanDevice.logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create pipeline layout!");
-	}
-
-	VkGraphicsPipelineCreateInfo* pipelineInfo = FVulkanPipelineCalculator::CreateGraphicsPipelineInfo(swapChain, descriptorSetLayout, vulkanDevice.logicalDevice, renderPass, pipelineLayout);
-
-	environment.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
-	//particleFire.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
-	terrain.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
-
-	FVulkanPipelineCalculator::DeleteGraphicsPipelineInfo(pipelineInfo);
-}
-
-void FVulkanApplication::CreateCommandPool()
-{
-	FQueueFamilyIndices queueFamilyIndices = vulkanDevice.queueFamilyIndices;
-
-	VkCommandPoolCreateInfo poolInfo = FVulkanInitializers::CommandPoolCreateInfo();
-	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
-	poolInfo.flags = 0;
-
-	if (vkCreateCommandPool(vulkanDevice.logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create command pool!");
-	}
-}
-
-void FVulkanApplication::CreateCommandBuffers()
-{
-	commandBuffers.resize(swapChain.imageCount);
-
-	VkCommandBufferAllocateInfo allocateInfo = FVulkanInitializers::CommandBufferAllocateInfo();
-	allocateInfo.commandPool = commandPool;
-	allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocateInfo.commandBufferCount = (uint32_t)commandBuffers.size();
-
-	if (vkAllocateCommandBuffers(vulkanDevice.logicalDevice, &allocateInfo, commandBuffers.data()) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to allocate command buffers");
-	}
-}
-
-void FVulkanApplication::BuildCommandBuffers()
-{
-	VkCommandBufferBeginInfo beginInfo = FVulkanInitializers::CommandBufferBeginInfo();
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-	beginInfo.pInheritanceInfo = nullptr;
-
-	std::array<VkClearValue, 2> clearValues = {};
-	clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-	clearValues[1].depthStencil = { 1.0f, 0 };
-
-	VkRenderPassBeginInfo renderPassInfo = FVulkanInitializers::RenderPassBeginInfo();
-	renderPassInfo.renderPass = renderPass;
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = swapChain.extent;
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
-
-	for (size_t i = 0; i < commandBuffers.size(); i++)
-	{
-		renderPassInfo.framebuffer = swapChain.frameBuffers[i];
-
-		vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
-
-		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		environment.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
-		//particleFire.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
-		terrain.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
-
-		vkCmdEndRenderPass(commandBuffers[i]);
-
-		if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to record command buffer!");
-		}
-	}
-}
-
 void FVulkanApplication::CreateFrameBuffers()
 {
 	for (size_t i = 0; i < swapChain.imageCount; i++)
@@ -643,30 +520,13 @@ void FVulkanApplication::DrawFrame()
 		throw std::runtime_error("failed to acquire swap chain image!");
 	}
 
-	VkSubmitInfo submitInfo = FVulkanInitializers::SubmitInfo();
-
-	VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
-
-	VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
-
-	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to submit draw command buffer!");
-	}
-
+	modelRenderer->Submit(graphicsQueue, imageIndex);
 	screenGrab->Submit(graphicsQueue, imageIndex);
 	cursor3D.Submit(graphicsQueue, imageIndex);
 	textOverlay->Submit(graphicsQueue, imageIndex);
 	
 
+	VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
 	VkPresentInfoKHR presentInfo = FVulkanInitializers::PresentInfoKHR();
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = signalSemaphores;
@@ -690,36 +550,7 @@ void FVulkanApplication::DrawFrame()
 	vkDeviceWaitIdle(vulkanDevice.logicalDevice);
 }
 
-void FVulkanApplication::CreateSemaphores()
-{
-	VkSemaphoreCreateInfo semaphoreInfo = FVulkanInitializers::SemaphoreCreateInfo();
 
-	if (vkCreateSemaphore(vulkanDevice.logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-		vkCreateSemaphore(vulkanDevice.logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create semaphores!");
-	}
-}
-
-void FVulkanApplication::RecreateSwapChain()
-{
-	vkDeviceWaitIdle(vulkanDevice.logicalDevice);
-
-	CleanupSwapChain();
-
-	CreateSwapChain();
-	CreateRenderPass();
-	CreateGraphicsPipeline();
-	CreateDepthResources();
-	CreateFrameBuffers();
-	CreateCommandBuffers();
-	BuildCommandBuffers();
-	textOverlay->Initialize(this, vulkanDevice);
-	// TODO: Recreate Swap chain for enviroment
-	cursor3D.Initialize(gameManager);
-	screenGrab->CreateCommandBuffers(vulkanDevice, commandPool, swapChain);
-	screenGrab->BuildCommandBuffers(vulkanDevice, commandPool, swapChain, depthImage, presentQueue);
-}
 
 void FVulkanApplication::OnWindowResized(GLFWwindow* window, int width, int height)
 {
@@ -732,32 +563,11 @@ void FVulkanApplication::OnWindowResized(GLFWwindow* window, int width, int heig
 	app->RecreateSwapChain();
 }
 
-void FVulkanApplication::UpdateUniformBuffer()
+void FVulkanApplication::UpdateFrame()
 {
-	environment.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
-	//particleFire.UpdateUniformBuffer(vulkanDevice.logicalDevice, scene);
-	//particleFire.UpdateParticles();
-	terrain.UpdateFrame(vulkanDevice.logicalDevice, scene);
+	modelRenderer->UpdateFrame(vulkanDevice.logicalDevice);
+
 	textOverlay->UpdateFrame(vulkanDevice);
-}
-
-void FVulkanApplication::CreateDescriptorPool()
-{
-	std::array<VkDescriptorPoolSize, 2> descriptorPoolSizes = {};
-	descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorPoolSizes[0].descriptorCount = 3;
-	descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorPoolSizes[1].descriptorCount = 6;
-
-	VkDescriptorPoolCreateInfo descriptorPoolInfo = FVulkanInitializers::DescriptorPoolCreateInfo();
-	descriptorPoolInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
-	descriptorPoolInfo.pPoolSizes = descriptorPoolSizes.data();
-	descriptorPoolInfo.maxSets = 3;
-
-	if (vkCreateDescriptorPool(vulkanDevice.logicalDevice, &descriptorPoolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create descriptor pool!");
-	}
 }
 
 void FVulkanApplication::CreateDepthResources()

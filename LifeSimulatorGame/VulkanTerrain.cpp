@@ -26,6 +26,21 @@ void FVulkanTerrain::Initialize(FGameManager* gameManager)
 	terrain = gameManager->terrain;
 }
 
+void FVulkanTerrain::Destroy(FVulkanDevice vulkanDevice)
+{
+
+}
+
+void FVulkanTerrain::UpdateFrame()
+{
+
+}
+
+void FVulkanTerrain::Submit(VkQueue graphicsQueue, uint32_t bufferindex)
+{
+
+}
+
 void FVulkanTerrain::LoadAssets()
 {
 	PerlinNoise Noise;

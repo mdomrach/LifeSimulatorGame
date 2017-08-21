@@ -11,9 +11,13 @@ class FGameManager;
 
 class FEnvironment
 {
-public:	
-	FVulkanTexture texture;
+public:
+	void Initialize(FGameManager* gameManager);
+	void Destroy(FVulkanDevice vulkanDevice);
+	void UpdateFrame();
+	void Submit(VkQueue graphicsQueue, uint32_t bufferindex);
 
+public:	
 	VkPipeline graphicsPipeline;
 	VkDescriptorSet descriptorSet;
 	FVulkanBuffer uniformBuffer;
@@ -21,10 +25,8 @@ public:
 	FVulkanBuffer vertexBuffer;
 	FVulkanBuffer indexBuffer;
 
-	void Destroy(FVulkanDevice vulkanDevice);
 	void DestroyBuffers(FVulkanDevice vulkanDevice);
 
-	void Initialize(FGameManager* gameManager);
 	void PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCreateInfo* pipelineInfo);
 	//void LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue queue);
 	void CreateBuffers(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
@@ -35,8 +37,6 @@ public:
 	void BuildCommandBuffers(VkCommandBuffer commandBuffer, FScene* scene, VkPipelineLayout pipelinelayout);
 
 private:
-	const std::string TEXTURE_PATH = "Textures/chalet.jpg";
-
 	void CreateUniformBuffer(FVulkanDevice vulkanDevice);
 	void CreateVertexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 	void CreateIndexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);

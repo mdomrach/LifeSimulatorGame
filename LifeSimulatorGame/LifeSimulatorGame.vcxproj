@@ -125,6 +125,7 @@
     <ClCompile Include="Cursor3D.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="FileCalculator.cpp" />
+    <ClCompile Include="VulkanModelRenderer.cpp" />
     <ClCompile Include="VulkanScreenGrab.cpp" />
     <ClCompile Include="Particle.cpp" />
     <ClCompile Include="ShaderCalculator.cpp" />
@@ -188,6 +189,7 @@
     <ClInclude Include="Cursor3D.h" />
     <ClInclude Include="Environment.h" />
     <ClInclude Include="FileCalculator.h" />
+    <ClInclude Include="VulkanModelRenderer.h" />
     <ClInclude Include="VulkanScreenGrab.h" />
     <ClInclude Include="HeightMap.h" />
     <ClInclude Include="PerlinNoise.h" />

@@ -11,7 +11,7 @@
 #include "ShaderCalculator.h"
 #include "TimeManager.h"
 
-void FTextOverlay::Initialize(FVulkanApplication* vulkanApplication, FVulkanDevice vulkanDevice)
+void FTextOverlay::UpdateSwapChain(FVulkanApplication* vulkanApplication, FVulkanDevice vulkanDevice)
 {
 	// Load the text rendering shaders
 

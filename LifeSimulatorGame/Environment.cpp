@@ -44,17 +44,19 @@ void FEnvironment::Initialize(FGameManager* gameManager)
 	gameManager->scene->mesh = mesh;
 }
 
-//void FEnvironment::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue queue)
-//{
-//	FVulkanTextureCreateInfo textureCreateInfo = {};
-//	textureCreateInfo.filename = TEXTURE_PATH;
-//	textureCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-//	textureCreateInfo.Create(vulkanDevice, commandPool, queue, texture);
-//}
-
 void FEnvironment::Destroy(FVulkanDevice vulkanDevice)
 {
-	texture.Destroy(vulkanDevice);
+
+}
+
+void FEnvironment::UpdateFrame()
+{
+
+}
+
+void FEnvironment::Submit(VkQueue graphicsQueue, uint32_t bufferindex)
+{
+
 }
 
 void FEnvironment::DestroyBuffers(FVulkanDevice vulkanDevice)
@@ -134,11 +136,6 @@ void FEnvironment::CreateDescriptorSets(VkDevice logicalDevice, VkDescriptorSetL
 	bufferInfo.buffer = uniformBuffer.buffer;
 	bufferInfo.offset = 0;
 	bufferInfo.range = sizeof(FUniformBufferObject);
-
-	VkDescriptorImageInfo imageInfo = {};
-	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = texture.imageView;
-	imageInfo.sampler = texture.sampler;
 
 	std::array<VkWriteDescriptorSet, 1> descriptorWrites = {};
 	descriptorWrites[0] = FVulkanInitializers::WriteDescriptorSet();
