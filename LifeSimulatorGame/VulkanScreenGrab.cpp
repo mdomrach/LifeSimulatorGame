@@ -5,6 +5,7 @@
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
 #include "VulkanApplication.h"
+#include "VulkanApplicationData.h"
 
 #include "VulkanCalculator.h"
 #include "VulkanImageCalculator.h"
@@ -28,6 +29,7 @@ void FVulkanScreenGrab::Initialize(FGameManager* gameManager)
 {
 	inputManager = gameManager->inputManager;
 	vulkanApplication = gameManager->vulkanApplication;
+	applicationData = gameManager->applicationData;
 	scene = gameManager->scene;
 
 	inputManager->MonitorKeyState(GLFW_KEY_P);
@@ -38,14 +40,14 @@ void FVulkanScreenGrab::Initialize(FGameManager* gameManager)
 
 void FVulkanScreenGrab::UpdateSwapChain(FVulkanDevice vulkanDevice, FVulkanApplication* application)
 {
-	CreateCommandBuffers(vulkanDevice, application->commandPool, application->swapChain);
-	BuildCommandBuffers(vulkanDevice, application->commandPool, application->swapChain, application->depthImage, application->graphicsQueue);
+	CreateCommandBuffers(vulkanDevice, applicationData->commandPool, applicationData->swapChain);
+	BuildCommandBuffers(vulkanDevice, applicationData->commandPool, applicationData->swapChain, applicationData->depthImage, applicationData->graphicsQueue);
 }
 
 void FVulkanScreenGrab::ProcessInput()
 {
-	MapMemory(vulkanApplication->vulkanDevice);
-	OutputCurrentMousePosDepth(vulkanApplication->swapChain);
+	MapMemory(applicationData->vulkanDevice);
+	OutputCurrentMousePosDepth(applicationData->swapChain);
 }
 
 void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)

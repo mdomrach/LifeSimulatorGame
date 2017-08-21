@@ -20,12 +20,14 @@
 class FVulkanApplication;
 class FVulkanDevice;
 class FTimeManager;
+class FVulkanApplicationData;
+class FGameManager;
 
 class FTextOverlay
 {
 public:
 	enum ETextAlign { alignLeft, alignCenter, alignRight };
-
+	void Initialize(FGameManager* gameManager);
 	void UpdateSwapChain(FVulkanApplication* vulkanApplication, FVulkanDevice vulkanDevice);
 	void Destroy(FVulkanDevice* vulkanDevice);
 
@@ -34,7 +36,7 @@ public:
 	void Submit(VkQueue queue, uint32_t bufferindex);
 
 private:
-
+	FVulkanApplicationData* applicationData;
 	//references
 	VkQueue queue;
 

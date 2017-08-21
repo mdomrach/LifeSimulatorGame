@@ -10,6 +10,7 @@
 #include "TerrainEditor.h"
 #include "Terrain.h"
 #include "VulkanScreenGrab.h"
+#include "VulkanApplicationData.h"
 
 FGameManager::FGameManager()
 {
@@ -21,14 +22,17 @@ FGameManager::FGameManager()
 	terrainEditor = new FTerrainEditor();
 	terrain = new FTerrain();
 	screenGrab = new FVulkanScreenGrab();
+	applicationData = new FVulkanApplicationData();
+
+	screenGrab->Initialize(this);
+	cameraController->Initialize(this);
+	terrainEditor->Initialize(this);
 
 	vulkanApplication->Initialize(this);
 	vulkanApplication->InitializeVulkan();
 
 	inputManager->Initialize(this);
-	cameraController->Initialize(this);
-	terrainEditor->Initialize(this);
-	screenGrab->Initialize(this);
+
 }
 
 void FGameManager::Run()
@@ -55,7 +59,7 @@ void FGameManager::MainLoop()
 		FSleepCalculator::SleepUntilWaitTime(timeManager->deltaFrameTime);
 	}
 
-	vkDeviceWaitIdle(vulkanApplication->vulkanDevice.logicalDevice);
+	vkDeviceWaitIdle(applicationData->vulkanDevice.logicalDevice);
 }
 
 void FGameManager::CleanupGame()

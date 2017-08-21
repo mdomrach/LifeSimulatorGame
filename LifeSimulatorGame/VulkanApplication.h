@@ -52,28 +52,10 @@ private:
 	VkSurfaceKHR surface;
 
 public:
+	class FVulkanApplicationData* applicationData;
 	class FTextOverlay *textOverlay = nullptr;
 
-	FVulkanDevice vulkanDevice;
-//private:
-	VkQueue graphicsQueue; 
-	VkQueue presentQueue;
-
-	FVulkanSwapChain swapChain;
-
-	VkRenderPass renderPass;
-	VkPipelineLayout pipelineLayout;
-
-	VkCommandPool commandPool;
-	VkSemaphore imageAvailableSemaphore;
-	VkSemaphore renderFinishedSemaphore;
-
-
 	FVulkanCursor3D cursor3D;
-
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
 
 	FInputManager* inputManager;
 	FTimeManager* timeManager;

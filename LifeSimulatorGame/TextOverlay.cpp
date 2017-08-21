@@ -10,6 +10,13 @@
 #include "FileCalculator.h"
 #include "ShaderCalculator.h"
 #include "TimeManager.h"
+#include "GameManager.h"
+#include "VulkanApplicationData.h"
+
+void FTextOverlay::Initialize(FGameManager* gameManager)
+{
+	applicationData = gameManager->applicationData;
+}
 
 void FTextOverlay::UpdateSwapChain(FVulkanApplication* vulkanApplication, FVulkanDevice vulkanDevice)
 {
@@ -47,16 +54,16 @@ void FTextOverlay::InitializeHelper(FVulkanApplication* application, std::vector
 	this->timeManager = application->timeManager;
 
 	this->shaderStages = shaderStages;
-	this->frameBufferHeight = &application->swapChain.extent.height;
-	this->frameBufferWidth = &application->swapChain.extent.width;
+	this->frameBufferHeight = &applicationData->swapChain.extent.height;
+	this->frameBufferWidth = &applicationData->swapChain.extent.width;
 	
-	this->frameBuffers.resize(application->swapChain.frameBuffers.size());
-	for (uint32_t i = 0; i < application->swapChain.frameBuffers.size(); i++)
+	this->frameBuffers.resize(applicationData->swapChain.frameBuffers.size());
+	for (uint32_t i = 0; i < applicationData->swapChain.frameBuffers.size(); i++)
 	{
-		this->frameBuffers[i] = &application->swapChain.frameBuffers[i];
+		this->frameBuffers[i] = &applicationData->swapChain.frameBuffers[i];
 	}
 
-	cmdBuffers.resize(application->swapChain.frameBuffers.size());
+	cmdBuffers.resize(applicationData->swapChain.frameBuffers.size());
 
 	PrepareResources(application);
 	PrepareRenderPass(application);
@@ -331,12 +338,12 @@ void FTextOverlay::CreatePipelineCache(FVulkanDevice vulkanDevice)
 }
 void FTextOverlay::PrepareResources(FVulkanApplication* application)
 {
-	auto vulkanDevice = application->vulkanDevice;
+	auto vulkanDevice = applicationData->vulkanDevice;
 	
 	CreateCommandPool(vulkanDevice);
 	CreateCommandBuffer(vulkanDevice);
 	CreateVertexBuffer(vulkanDevice);
-	CreateFontTexture(vulkanDevice, application->graphicsQueue);
+	CreateFontTexture(vulkanDevice, applicationData->graphicsQueue);
 	CreateDescriptorPool(vulkanDevice);
 	CreateDescriptorSetLayout(vulkanDevice);
 	CreatePipelineLayout(vulkanDevice);
@@ -346,10 +353,10 @@ void FTextOverlay::PrepareResources(FVulkanApplication* application)
 
 void FTextOverlay::PrepareRenderPass(FVulkanApplication* application)
 {
-	auto* vulkanDevice = &application->vulkanDevice;
+	auto* vulkanDevice = &applicationData->vulkanDevice;
 
 	VkAttachmentDescription colorAttachment = {};
-	colorAttachment.format = application->swapChain.colorFormat;
+	colorAttachment.format = applicationData->swapChain.colorFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -434,7 +441,7 @@ void FTextOverlay::PrepareRenderPass(FVulkanApplication* application)
 
 void FTextOverlay::PreparePipeline(FVulkanApplication* application)
 {
-	auto* vulkanDevice = &application->vulkanDevice;
+	auto* vulkanDevice = &applicationData->vulkanDevice;
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = FVulkanInitializers::PipelineInputAssemblyStateCreateInfo();
 	inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;

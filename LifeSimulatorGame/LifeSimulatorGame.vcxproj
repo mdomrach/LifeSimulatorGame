@@ -189,6 +189,7 @@
     <ClInclude Include="Cursor3D.h" />
     <ClInclude Include="Environment.h" />
     <ClInclude Include="FileCalculator.h" />
+    <ClInclude Include="VulkanApplicationData.h" />
     <ClInclude Include="VulkanModelRenderer.h" />
     <ClInclude Include="VulkanScreenGrab.h" />
     <ClInclude Include="HeightMap.h" />

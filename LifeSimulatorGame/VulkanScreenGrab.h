@@ -13,6 +13,7 @@ class FGameManager;
 class FInputManager;
 class FVulkanApplication;
 class FScene;
+class FVulkanApplicationData;
 
 class FVulkanScreenGrab
 {
@@ -46,6 +47,7 @@ private:
 	void MapMemory(FVulkanDevice vulkanDevice);
 	FInputManager* inputManager;
 	FVulkanApplication* vulkanApplication;
+	FVulkanApplicationData* applicationData;
 	FScene* scene;
 
 	bool isScreenShot;

@@ -13,7 +13,8 @@ class FVulkanApplication;
 
 class FVulkanCursor3D
 {
-public:	
+public:
+	void Initialize(FGameManager* gameManager);
 	void UpdateSwapChain(FGameManager* gameManager);
 	void Destroy(FVulkanDevice vulkanDevice);
 	
@@ -22,6 +23,8 @@ public:
 	void Submit(VkQueue queue, uint32_t bufferindex);
 
 private:
+	class FVulkanApplicationData* applicationData;
+
 	void LoadAssets();
 	VkCommandPool commandPool;
 	VkDescriptorPool descriptorPool;

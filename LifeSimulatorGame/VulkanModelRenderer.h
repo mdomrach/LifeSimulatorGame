@@ -9,6 +9,7 @@ class FVulkanDevice;
 class FGameManager;
 class FScene;
 class FVulkanApplication;
+class FVulkanApplicationData;
 
 class FVulkanModelRenderer
 {
@@ -48,6 +49,7 @@ private:
 	std::vector<VkCommandBuffer> commandBuffers;
 
 	FVulkanApplication* vulkanApplication;
+	FVulkanApplicationData* applicationData;
 	FScene* scene;
 	VkRenderPass renderPass;
 

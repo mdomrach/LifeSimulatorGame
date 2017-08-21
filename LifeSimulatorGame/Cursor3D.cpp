@@ -20,29 +20,36 @@
 #include "VulkanApplication.h"
 #include "VulkanCalculator.h"
 #include "VulkanPipelineCalculator.h"
+#include "VulkanApplicationData.h"
+
+
+void FVulkanCursor3D::Initialize(FGameManager* gameManager)
+{
+	this->applicationData = gameManager->applicationData;
+}
 
 void FVulkanCursor3D::UpdateSwapChain(FGameManager* gameManager)
 {
 	this->scene = gameManager->scene;
 
 	auto application = gameManager->vulkanApplication;
-	this->frameBufferHeight = &application->swapChain.extent.height;
-	this->frameBufferWidth = &application->swapChain.extent.width;
+	this->frameBufferHeight = &applicationData->swapChain.extent.height;
+	this->frameBufferWidth = &applicationData->swapChain.extent.width;
 
-	this->frameBuffers.resize(application->swapChain.frameBuffers.size());
-	for (uint32_t i = 0; i < application->swapChain.frameBuffers.size(); i++)
+	this->frameBuffers.resize(applicationData->swapChain.frameBuffers.size());
+	for (uint32_t i = 0; i < applicationData->swapChain.frameBuffers.size(); i++)
 	{
-		this->frameBuffers[i] = &application->swapChain.frameBuffers[i];
+		this->frameBuffers[i] = &applicationData->swapChain.frameBuffers[i];
 	}
 
-	commandBuffers.resize(application->swapChain.frameBuffers.size());
+	commandBuffers.resize(applicationData->swapChain.frameBuffers.size());
 
 	PrepareResources(application);
 }
 
 void FVulkanCursor3D::PrepareResources(FVulkanApplication* application)
 {
-	auto vulkanDevice = application->vulkanDevice;
+	auto vulkanDevice = applicationData->vulkanDevice;
 
 	CreateCommandPool(vulkanDevice);
 	CreateDescriptorSetLayout(vulkanDevice.logicalDevice);
@@ -52,13 +59,13 @@ void FVulkanCursor3D::PrepareResources(FVulkanApplication* application)
 
 	// swap chainy
 	PrepareRenderPass(application);
-	VkGraphicsPipelineCreateInfo* pipelineInfo = FVulkanPipelineCalculator::CreateGraphicsPipelineInfo(application->swapChain, descriptorSetLayout, vulkanDevice.logicalDevice, renderPass, pipelineLayout);
+	VkGraphicsPipelineCreateInfo* pipelineInfo = FVulkanPipelineCalculator::CreateGraphicsPipelineInfo(applicationData->swapChain, descriptorSetLayout, vulkanDevice.logicalDevice, renderPass, pipelineLayout);
 	CreateGraphicsPipeline(vulkanDevice.logicalDevice, pipelineInfo);
 	FVulkanPipelineCalculator::DeleteGraphicsPipelineInfo(pipelineInfo);
 
 
 	LoadAssets();
-	CreateBuffers(vulkanDevice, application->graphicsQueue);
+	CreateBuffers(vulkanDevice, applicationData->graphicsQueue);
 	CreateDescriptorPool(vulkanDevice);
 	CreateDescriptorSet(vulkanDevice.logicalDevice);
 
@@ -476,7 +483,7 @@ void FVulkanCursor3D::Submit(VkQueue queue, uint32_t bufferindex)
 void FVulkanCursor3D::PrepareRenderPass(FVulkanApplication* application)
 {
 	VkAttachmentDescription colorAttachment = {};
-	colorAttachment.format = application->swapChain.colorFormat;
+	colorAttachment.format = applicationData->swapChain.colorFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -486,7 +493,7 @@ void FVulkanCursor3D::PrepareRenderPass(FVulkanApplication* application)
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentDescription depthAttachment = {};
-	depthAttachment.format = FVulkanCalculator::FindDepthFormat(application->vulkanDevice.physicalDevice);
+	depthAttachment.format = FVulkanCalculator::FindDepthFormat(applicationData->vulkanDevice.physicalDevice);
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -526,7 +533,7 @@ void FVulkanCursor3D::PrepareRenderPass(FVulkanApplication* application)
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 
-	if (vkCreateRenderPass(application->vulkanDevice.logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+	if (vkCreateRenderPass(applicationData->vulkanDevice.logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create render pass!");
 	}

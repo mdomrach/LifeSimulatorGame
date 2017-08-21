@@ -5,9 +5,11 @@
 #include "VulkanInitializers.h"
 #include "VulkanPipelineCalculator.h"
 #include "VulkanCalculator.h"
+#include "VulkanApplicationData.h"
 
 void FVulkanModelRenderer::Initialize(FGameManager* gameManager)
 {
+	applicationData = gameManager->applicationData;
 	vulkanApplication = gameManager->vulkanApplication;
 	scene = gameManager->scene;
 
@@ -19,7 +21,7 @@ void FVulkanModelRenderer::Initialize(FGameManager* gameManager)
 void FVulkanModelRenderer::InitializeVulkan(FVulkanDevice vulkanDevice)
 {
 	CreateDescriptorSetLayout();
-	CreateBuffers(vulkanDevice, vulkanApplication->commandPool, vulkanApplication->graphicsQueue);
+	CreateBuffers(vulkanDevice, applicationData->commandPool, applicationData->graphicsQueue);
 	CreateDescriptorPool(vulkanDevice);
 	CreateDescriptorSets(vulkanDevice);
 }
@@ -40,16 +42,16 @@ void FVulkanModelRenderer::CreateGraphicsPipeline()
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = 0;
 
-	if (vkCreatePipelineLayout(vulkanApplication->vulkanDevice.logicalDevice, &pipelineLayoutInfo, nullptr, &vulkanApplication->pipelineLayout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(applicationData->vulkanDevice.logicalDevice, &pipelineLayoutInfo, nullptr, &applicationData->pipelineLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	VkGraphicsPipelineCreateInfo* pipelineInfo = FVulkanPipelineCalculator::CreateGraphicsPipelineInfo(vulkanApplication->swapChain, descriptorSetLayout, vulkanApplication->vulkanDevice.logicalDevice, renderPass, vulkanApplication->pipelineLayout);
+	VkGraphicsPipelineCreateInfo* pipelineInfo = FVulkanPipelineCalculator::CreateGraphicsPipelineInfo(applicationData->swapChain, descriptorSetLayout, applicationData->vulkanDevice.logicalDevice, renderPass, applicationData->pipelineLayout);
 
-	environment.PreparePipeline(vulkanApplication->vulkanDevice.logicalDevice, pipelineInfo);
+	environment.PreparePipeline(applicationData->vulkanDevice.logicalDevice, pipelineInfo);
 	//particleFire.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
-	terrain.PreparePipeline(vulkanApplication->vulkanDevice.logicalDevice, pipelineInfo);
+	terrain.PreparePipeline(applicationData->vulkanDevice.logicalDevice, pipelineInfo);
 
 	FVulkanPipelineCalculator::DeleteGraphicsPipelineInfo(pipelineInfo);
 }
@@ -82,7 +84,7 @@ void FVulkanModelRenderer::Submit(VkQueue graphicsQueue, uint32_t bufferindex)
 {
 	VkSubmitInfo submitInfo = FVulkanInitializers::SubmitInfo();
 
-	VkSemaphore waitSemaphores[] = { vulkanApplication->imageAvailableSemaphore };
+	VkSemaphore waitSemaphores[] = { applicationData->imageAvailableSemaphore };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
@@ -90,7 +92,7 @@ void FVulkanModelRenderer::Submit(VkQueue graphicsQueue, uint32_t bufferindex)
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffers[bufferindex];
 
-	VkSemaphore signalSemaphores[] = { vulkanApplication->renderFinishedSemaphore };
+	VkSemaphore signalSemaphores[] = { applicationData->renderFinishedSemaphore };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -102,13 +104,13 @@ void FVulkanModelRenderer::Submit(VkQueue graphicsQueue, uint32_t bufferindex)
 
 void FVulkanModelRenderer::DestroyPipelines()
 {
-	vkDestroyPipeline(vulkanApplication->vulkanDevice.logicalDevice, environment.graphicsPipeline, nullptr);
+	vkDestroyPipeline(applicationData->vulkanDevice.logicalDevice, environment.graphicsPipeline, nullptr);
 	//vkDestroyPipeline(vulkanDevice.logicalDevice, particleFire.graphicsPipeline, nullptr);
 }
 
 void FVulkanModelRenderer::FreeCommandBuffers()
 {
-	vkFreeCommandBuffers(vulkanApplication->vulkanDevice.logicalDevice, vulkanApplication->commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	vkFreeCommandBuffers(applicationData->vulkanDevice.logicalDevice, applicationData->commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 }
 
 void FVulkanModelRenderer::CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
@@ -146,10 +148,10 @@ void  FVulkanModelRenderer::CreateDescriptorSets(FVulkanDevice vulkanDevice)
 
 void  FVulkanModelRenderer::CreateCommandBuffers(FVulkanDevice vulkanDevice)
 {
-	commandBuffers.resize(vulkanApplication->swapChain.imageCount);
+	commandBuffers.resize(applicationData->swapChain.imageCount);
 
 	VkCommandBufferAllocateInfo allocateInfo = FVulkanInitializers::CommandBufferAllocateInfo();
-	allocateInfo.commandPool = vulkanApplication->commandPool;
+	allocateInfo.commandPool = applicationData->commandPool;
 	allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocateInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
@@ -173,21 +175,21 @@ void  FVulkanModelRenderer::BuildCommandBuffers(FVulkanDevice vulkanDevice)
 	VkRenderPassBeginInfo renderPassInfo = FVulkanInitializers::RenderPassBeginInfo();
 	renderPassInfo.renderPass = renderPass;
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = vulkanApplication->swapChain.extent;
+	renderPassInfo.renderArea.extent = applicationData->swapChain.extent;
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
 
 	for (size_t i = 0; i < commandBuffers.size(); i++)
 	{
-		renderPassInfo.framebuffer = vulkanApplication->swapChain.frameBuffers[i];
+		renderPassInfo.framebuffer = applicationData->swapChain.frameBuffers[i];
 
 		vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		environment.BuildCommandBuffers(commandBuffers[i], scene, vulkanApplication->pipelineLayout);
+		environment.BuildCommandBuffers(commandBuffers[i], scene, applicationData->pipelineLayout);
 		//particleFire.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
-		terrain.BuildCommandBuffers(commandBuffers[i], scene, vulkanApplication->pipelineLayout);
+		terrain.BuildCommandBuffers(commandBuffers[i], scene, applicationData->pipelineLayout);
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -237,7 +239,7 @@ void FVulkanModelRenderer::CreateDescriptorSetLayout()
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 	layoutInfo.pBindings = bindings.data();
 
-	if (vkCreateDescriptorSetLayout(vulkanApplication->vulkanDevice.logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(applicationData->vulkanDevice.logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create descriptor set layout!");
 	}
@@ -246,7 +248,7 @@ void FVulkanModelRenderer::CreateDescriptorSetLayout()
 void FVulkanModelRenderer::CreateRenderPass()
 {
 	VkAttachmentDescription colorAttachment = {};
-	colorAttachment.format = vulkanApplication->swapChain.colorFormat;
+	colorAttachment.format = applicationData->swapChain.colorFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -256,7 +258,7 @@ void FVulkanModelRenderer::CreateRenderPass()
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentDescription depthAttachment = {};
-	depthAttachment.format = FVulkanCalculator::FindDepthFormat(vulkanApplication->vulkanDevice.physicalDevice);
+	depthAttachment.format = FVulkanCalculator::FindDepthFormat(applicationData->vulkanDevice.physicalDevice);
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -296,7 +298,7 @@ void FVulkanModelRenderer::CreateRenderPass()
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 
-	if (vkCreateRenderPass(vulkanApplication->vulkanDevice.logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+	if (vkCreateRenderPass(applicationData->vulkanDevice.logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create render pass!");
 	}

@@ -8,6 +8,7 @@ class FCameraController;
 class FTerrainEditor;
 class FTerrain;
 class FVulkanScreenGrab;
+class FVulkanApplicationData;
 
 class FGameManager
 {
@@ -20,6 +21,7 @@ public:
 	FTerrainEditor* terrainEditor;
 	FTerrain* terrain;
 	FVulkanScreenGrab* screenGrab;
+	FVulkanApplicationData* applicationData;
 
 	FGameManager();
 	

@@ -39,6 +39,7 @@
 #include "FileCalculator.h"
 #include "VulkanScreenGrab.h"
 #include "VulkanModelRenderer.h"
+#include "VulkanApplicationData.h"
 
 void FVulkanApplication::Initialize(FGameManager* gameManager)
 {
@@ -47,10 +48,13 @@ void FVulkanApplication::Initialize(FGameManager* gameManager)
 	timeManager = gameManager->timeManager;
 	scene = gameManager->scene;
 	screenGrab = gameManager->screenGrab;
+	applicationData = gameManager->applicationData;
 
 	modelRenderer = new FVulkanModelRenderer();
 	modelRenderer->Initialize(gameManager);
 	textOverlay = new FTextOverlay();
+	textOverlay->Initialize(gameManager);
+	cursor3D.Initialize(gameManager);
 }
 
 void FVulkanApplication::InitializeVulkan()
@@ -64,14 +68,14 @@ void FVulkanApplication::InitializeVulkan()
 	CreateWindowSurface();
 
 	SetupDevice();
-	CreateSemaphores(vulkanDevice);
+	CreateSemaphores(applicationData->vulkanDevice);
 	CreateCommandPool();
 
-	modelRenderer->InitializeVulkan(vulkanDevice);
+	modelRenderer->InitializeVulkan(applicationData->vulkanDevice);
 
 	UpdateSwapChain();
 
-	scene->camera = new FCamera(swapChain.extent.width, swapChain.extent.height);
+	scene->camera = new FCamera(applicationData->swapChain.extent.width, applicationData->swapChain.extent.height);
 
 }
 
@@ -82,15 +86,15 @@ void FVulkanApplication::UpdateSwapChain()
 	CreateDepthResources();
 	CreateFrameBuffers();
 
-	modelRenderer->UpdateSwapChain(vulkanDevice);
-	textOverlay->UpdateSwapChain(this, vulkanDevice);
+	modelRenderer->UpdateSwapChain(applicationData->vulkanDevice);
+	textOverlay->UpdateSwapChain(this, applicationData->vulkanDevice);
 	cursor3D.UpdateSwapChain(gameManager);
-	screenGrab->UpdateSwapChain(vulkanDevice, this);
+	screenGrab->UpdateSwapChain(applicationData->vulkanDevice, this);
 }
 
 void FVulkanApplication::RecreateSwapChain()
 {
-	vkDeviceWaitIdle(vulkanDevice.logicalDevice);
+	vkDeviceWaitIdle(applicationData->vulkanDevice.logicalDevice);
 
 	CleanupSwapChain();
 
@@ -101,8 +105,8 @@ void FVulkanApplication::CreateSemaphores(FVulkanDevice vulkanDevice)
 {
 	VkSemaphoreCreateInfo semaphoreInfo = FVulkanInitializers::SemaphoreCreateInfo();
 
-	if (vkCreateSemaphore(vulkanDevice.logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-		vkCreateSemaphore(vulkanDevice.logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS)
+	if (vkCreateSemaphore(vulkanDevice.logicalDevice, &semaphoreInfo, nullptr, &applicationData->imageAvailableSemaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(vulkanDevice.logicalDevice, &semaphoreInfo, nullptr, &applicationData->renderFinishedSemaphore) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create semaphores!");
 	}
@@ -110,13 +114,13 @@ void FVulkanApplication::CreateSemaphores(FVulkanDevice vulkanDevice)
 
 void FVulkanApplication::CreateCommandPool()
 {
-	FQueueFamilyIndices queueFamilyIndices = vulkanDevice.queueFamilyIndices;
+	FQueueFamilyIndices queueFamilyIndices = applicationData->vulkanDevice.queueFamilyIndices;
 
 	VkCommandPoolCreateInfo poolInfo = FVulkanInitializers::CommandPoolCreateInfo();
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
 	poolInfo.flags = 0;
 
-	if (vkCreateCommandPool(vulkanDevice.logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
+	if (vkCreateCommandPool(applicationData->vulkanDevice.logicalDevice, &poolInfo, nullptr, &applicationData->commandPool) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create command pool!");
 	}
@@ -141,7 +145,7 @@ void FVulkanApplication::SetupDevice()
 	FVulkanDeviceCreateInfo createInfo;
 	createInfo.surface = surface;
 
-	if (createInfo.Create(&instance, &vulkanDevice) != VK_SUCCESS)
+	if (createInfo.Create(&instance, &applicationData->vulkanDevice) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create device!");
 	}
@@ -193,9 +197,9 @@ void FVulkanApplication::CreateWindowSurface()
 
 void FVulkanApplication::GetDeviceQueues()
 {
-	auto& indicies = vulkanDevice.queueFamilyIndices;
-	vkGetDeviceQueue(vulkanDevice.logicalDevice, indicies.graphicsFamily, 0, &graphicsQueue);
-	vkGetDeviceQueue(vulkanDevice.logicalDevice, indicies.presentFamily, 0, &presentQueue);
+	auto& indicies = applicationData->vulkanDevice.queueFamilyIndices;
+	vkGetDeviceQueue(applicationData->vulkanDevice.logicalDevice, indicies.graphicsFamily, 0, &applicationData->graphicsQueue);
+	vkGetDeviceQueue(applicationData->vulkanDevice.logicalDevice, indicies.presentFamily, 0, &applicationData->presentQueue);
 }
 
 VkSurfaceFormatKHR FVulkanApplication::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
@@ -259,48 +263,48 @@ VkExtent2D FVulkanApplication::ChoseSwapExtent(const VkSurfaceCapabilitiesKHR& c
 
 void FVulkanApplication::CleanupSwapChain()
 {
-	screenGrab->Destroy(vulkanDevice);
-	cursor3D.Destroy(vulkanDevice);
-	textOverlay->Destroy(&vulkanDevice);
+	screenGrab->Destroy(applicationData->vulkanDevice);
+	cursor3D.Destroy(applicationData->vulkanDevice);
+	textOverlay->Destroy(&applicationData->vulkanDevice);
 
 
-	vkDestroyImageView(vulkanDevice.logicalDevice, depthImageView, nullptr);
-	vkDestroyImage(vulkanDevice.logicalDevice, depthImage, nullptr);
-	vkFreeMemory(vulkanDevice.logicalDevice, depthImageMemory, nullptr);
+	vkDestroyImageView(applicationData->vulkanDevice.logicalDevice, applicationData->depthImageView, nullptr);
+	vkDestroyImage(applicationData->vulkanDevice.logicalDevice, applicationData->depthImage, nullptr);
+	vkFreeMemory(applicationData->vulkanDevice.logicalDevice, applicationData->depthImageMemory, nullptr);
 
-	for (size_t i = 0; i < swapChain.imageCount; i++)
+	for (size_t i = 0; i < applicationData->swapChain.imageCount; i++)
 	{
-		vkDestroyFramebuffer(vulkanDevice.logicalDevice, swapChain.frameBuffers[i], nullptr);
+		vkDestroyFramebuffer(applicationData->vulkanDevice.logicalDevice, applicationData->swapChain.frameBuffers[i], nullptr);
 	}
 
 	modelRenderer->FreeCommandBuffers();
 
 	modelRenderer->DestroyPipelines();
 
-	vkDestroyPipelineLayout(vulkanDevice.logicalDevice, pipelineLayout, nullptr);
-	vkDestroyRenderPass(vulkanDevice.logicalDevice, renderPass, nullptr);
-	for (size_t i = 0; i < swapChain.imageCount; i++)
+	vkDestroyPipelineLayout(applicationData->vulkanDevice.logicalDevice, applicationData->pipelineLayout, nullptr);
+	vkDestroyRenderPass(applicationData->vulkanDevice.logicalDevice, applicationData->renderPass, nullptr);
+	for (size_t i = 0; i < applicationData->swapChain.imageCount; i++)
 	{
-		vkDestroyImageView(vulkanDevice.logicalDevice, swapChain.imageViews[i], nullptr);
+		vkDestroyImageView(applicationData->vulkanDevice.logicalDevice, applicationData->swapChain.imageViews[i], nullptr);
 	}
-	vkDestroySwapchainKHR(vulkanDevice.logicalDevice, swapChain.swapChain, nullptr);
+	vkDestroySwapchainKHR(applicationData->vulkanDevice.logicalDevice, applicationData->swapChain.swapChain, nullptr);
 }
 
 void FVulkanApplication::Cleanup()
 {
 	CleanupSwapChain();
 
-	modelRenderer->Destroy(vulkanDevice);
+	modelRenderer->Destroy(applicationData->vulkanDevice);
 
 
 	//modelRenderer->DestroyBuffers(vulkanDevice);
 
-	vkDestroySemaphore(vulkanDevice.logicalDevice, renderFinishedSemaphore, nullptr);
-	vkDestroySemaphore(vulkanDevice.logicalDevice, imageAvailableSemaphore, nullptr);
+	vkDestroySemaphore(applicationData->vulkanDevice.logicalDevice, applicationData->renderFinishedSemaphore, nullptr);
+	vkDestroySemaphore(applicationData->vulkanDevice.logicalDevice, applicationData->imageAvailableSemaphore, nullptr);
 
-	vkDestroyCommandPool(vulkanDevice.logicalDevice, commandPool, nullptr);
+	vkDestroyCommandPool(applicationData->vulkanDevice.logicalDevice, applicationData->commandPool, nullptr);
 
-	vulkanDevice.Destroy(instance);
+	applicationData->vulkanDevice.Destroy(instance);
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyInstance(instance, nullptr);
 
@@ -362,7 +366,7 @@ std::vector<const char*> FVulkanApplication::GetRequiredExtensions()
 
 void FVulkanApplication::CreateSwapChain()
 {
-	FSwapChainSupportDetails swapChainSupport = vulkanDevice.swapChainSupportDetails;
+	FSwapChainSupportDetails swapChainSupport = applicationData->vulkanDevice.swapChainSupportDetails;
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
 	VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
@@ -383,7 +387,7 @@ void FVulkanApplication::CreateSwapChain()
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	FQueueFamilyIndices indices = vulkanDevice.queueFamilyIndices;
+	FQueueFamilyIndices indices = applicationData->vulkanDevice.queueFamilyIndices;
 	uint32_t queueFamilyIndices[] = { (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentFamily };
 
 	if (indices.graphicsFamily != indices.presentFamily)
@@ -405,28 +409,28 @@ void FVulkanApplication::CreateSwapChain()
 	createInfo.clipped = VK_TRUE;
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	if (vkCreateSwapchainKHR(vulkanDevice.logicalDevice, &createInfo, nullptr, &swapChain.swapChain) != VK_SUCCESS)
+	if (vkCreateSwapchainKHR(applicationData->vulkanDevice.logicalDevice, &createInfo, nullptr, &applicationData->swapChain.swapChain) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create swap chain!");
 	}
-	swapChain.imageCount = imageCount;
-	vkGetSwapchainImagesKHR(vulkanDevice.logicalDevice, swapChain.swapChain, &imageCount, nullptr);
-	swapChain.SetImageCount(imageCount);
-	vkGetSwapchainImagesKHR(vulkanDevice.logicalDevice, swapChain.swapChain, &imageCount, swapChain.images.data());
+	applicationData->swapChain.imageCount = imageCount;
+	vkGetSwapchainImagesKHR(applicationData->vulkanDevice.logicalDevice, applicationData->swapChain.swapChain, &imageCount, nullptr);
+	applicationData->swapChain.SetImageCount(imageCount);
+	vkGetSwapchainImagesKHR(applicationData->vulkanDevice.logicalDevice, applicationData->swapChain.swapChain, &imageCount, applicationData->swapChain.images.data());
 
-	swapChain.colorFormat = surfaceFormat.format;
-	swapChain.extent = extent;
+	applicationData->swapChain.colorFormat = surfaceFormat.format;
+	applicationData->swapChain.extent = extent;
 
-	for (size_t i = 0; i < swapChain.imageCount; i++)
+	for (size_t i = 0; i < applicationData->swapChain.imageCount; i++)
 	{
-		swapChain.imageViews[i] = FVulkanFactory::ImageView(vulkanDevice.logicalDevice, swapChain.images[i], swapChain.colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		applicationData->swapChain.imageViews[i] = FVulkanFactory::ImageView(applicationData->vulkanDevice.logicalDevice, applicationData->swapChain.images[i], applicationData->swapChain.colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 }
 
 void FVulkanApplication::CreateRenderPass()
 {
 	VkAttachmentDescription colorAttachment = {};
-	colorAttachment.format = swapChain.colorFormat;
+	colorAttachment.format = applicationData->swapChain.colorFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -436,7 +440,7 @@ void FVulkanApplication::CreateRenderPass()
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentDescription depthAttachment = {};
-	depthAttachment.format = FVulkanCalculator::FindDepthFormat(vulkanDevice.physicalDevice);
+	depthAttachment.format = FVulkanCalculator::FindDepthFormat(applicationData->vulkanDevice.physicalDevice);
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -476,7 +480,7 @@ void FVulkanApplication::CreateRenderPass()
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 
-	if (vkCreateRenderPass(vulkanDevice.logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+	if (vkCreateRenderPass(applicationData->vulkanDevice.logicalDevice, &renderPassInfo, nullptr, &applicationData->renderPass) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create render pass!");
 	}
@@ -484,22 +488,22 @@ void FVulkanApplication::CreateRenderPass()
 
 void FVulkanApplication::CreateFrameBuffers()
 {
-	for (size_t i = 0; i < swapChain.imageCount; i++)
+	for (size_t i = 0; i < applicationData->swapChain.imageCount; i++)
 	{
 		std::array<VkImageView, 2> attachments = {
-			swapChain.imageViews[i],
-			depthImageView
+			applicationData->swapChain.imageViews[i],
+			applicationData->depthImageView
 		};
 
 		VkFramebufferCreateInfo frameBufferInfo = FVulkanInitializers::FramebufferCreateInfo();
-		frameBufferInfo.renderPass = renderPass;
+		frameBufferInfo.renderPass = applicationData->renderPass;
 		frameBufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		frameBufferInfo.pAttachments = attachments.data();
-		frameBufferInfo.width = swapChain.extent.width;
-		frameBufferInfo.height = swapChain.extent.height;
+		frameBufferInfo.width = applicationData->swapChain.extent.width;
+		frameBufferInfo.height = applicationData->swapChain.extent.height;
 		frameBufferInfo.layers = 1;
 
-		if (vkCreateFramebuffer(vulkanDevice.logicalDevice, &frameBufferInfo, nullptr, &swapChain.frameBuffers[i]) != VK_SUCCESS)
+		if (vkCreateFramebuffer(applicationData->vulkanDevice.logicalDevice, &frameBufferInfo, nullptr, &applicationData->swapChain.frameBuffers[i]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("failed to create framebuffer!");
 		}
@@ -509,7 +513,7 @@ void FVulkanApplication::CreateFrameBuffers()
 void FVulkanApplication::DrawFrame()
 {
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(vulkanDevice.logicalDevice, swapChain.swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(applicationData->vulkanDevice.logicalDevice, applicationData->swapChain.swapChain, std::numeric_limits<uint64_t>::max(), applicationData->imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		RecreateSwapChain();
@@ -520,24 +524,24 @@ void FVulkanApplication::DrawFrame()
 		throw std::runtime_error("failed to acquire swap chain image!");
 	}
 
-	modelRenderer->Submit(graphicsQueue, imageIndex);
-	screenGrab->Submit(graphicsQueue, imageIndex);
-	cursor3D.Submit(graphicsQueue, imageIndex);
-	textOverlay->Submit(graphicsQueue, imageIndex);
+	modelRenderer->Submit(applicationData->graphicsQueue, imageIndex);
+	screenGrab->Submit(applicationData->graphicsQueue, imageIndex);
+	cursor3D.Submit(applicationData->graphicsQueue, imageIndex);
+	textOverlay->Submit(applicationData->graphicsQueue, imageIndex);
 	
 
-	VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+	VkSemaphore signalSemaphores[] = { applicationData->renderFinishedSemaphore };
 	VkPresentInfoKHR presentInfo = FVulkanInitializers::PresentInfoKHR();
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = signalSemaphores;
 
-	VkSwapchainKHR swapChains[] = { swapChain.swapChain };
+	VkSwapchainKHR swapChains[] = { applicationData->swapChain.swapChain };
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 
-	result = vkQueuePresentKHR(presentQueue, &presentInfo);
+	result = vkQueuePresentKHR(applicationData->presentQueue, &presentInfo);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{
 		RecreateSwapChain();
@@ -547,7 +551,7 @@ void FVulkanApplication::DrawFrame()
 		throw std::runtime_error("failed to present swap chain image!");
 	}
 
-	vkDeviceWaitIdle(vulkanDevice.logicalDevice);
+	vkDeviceWaitIdle(applicationData->vulkanDevice.logicalDevice);
 }
 
 
@@ -565,19 +569,19 @@ void FVulkanApplication::OnWindowResized(GLFWwindow* window, int width, int heig
 
 void FVulkanApplication::UpdateFrame()
 {
-	modelRenderer->UpdateFrame(vulkanDevice.logicalDevice);
+	modelRenderer->UpdateFrame(applicationData->vulkanDevice.logicalDevice);
 
-	textOverlay->UpdateFrame(vulkanDevice);
+	textOverlay->UpdateFrame(applicationData->vulkanDevice);
 }
 
 void FVulkanApplication::CreateDepthResources()
 {
-	VkFormat depthFormat = FVulkanCalculator::FindDepthFormat(vulkanDevice.physicalDevice);
-	FVulkanImageCalculator::CreateImage(vulkanDevice, swapChain.extent.width, swapChain.extent.height, depthFormat,
+	VkFormat depthFormat = FVulkanCalculator::FindDepthFormat(applicationData->vulkanDevice.physicalDevice);
+	FVulkanImageCalculator::CreateImage(applicationData->vulkanDevice, applicationData->swapChain.extent.width, applicationData->swapChain.extent.height, depthFormat,
 		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		depthImage, depthImageMemory);
-	depthImageView = FVulkanFactory::ImageView(vulkanDevice.logicalDevice, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		applicationData->depthImage, applicationData->depthImageMemory);
+	applicationData->depthImageView = FVulkanFactory::ImageView(applicationData->vulkanDevice.logicalDevice, applicationData->depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 	FVulkanImageCalculator::TransitionImageLayout(
-		vulkanDevice.logicalDevice, commandPool, graphicsQueue,
-		depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		applicationData->vulkanDevice.logicalDevice, applicationData->commandPool, applicationData->graphicsQueue,
+		applicationData->depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
