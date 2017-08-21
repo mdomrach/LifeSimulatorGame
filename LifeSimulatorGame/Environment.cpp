@@ -16,6 +16,33 @@
 #include "Mesh.h"
 #include "VulkanTextureCreateInfo.h"
 #include "TerrainVertex.h"
+#include "GameManager.h"
+
+void FEnvironment::Initialize(FGameManager* gameManager)
+{
+	auto mesh = new FMesh();
+
+	mesh->vertices = {
+		{ { -0.2f, -0.2f, 0.0f },{ -0.707f, -0.707f, 0.0f } },
+		{ { 0.2f, -0.2f, 0.0f },{ 0.707f, -0.707f, 0.0f } },
+		{ { 0.2f, -0.2f, 3.0f },{ 0.707f, -0.707f, 0.0f } },
+		{ { -0.2f, -0.2f, 3.0f },{ -0.707f, -0.707f, 0.0f } },
+		{ { -0.2f, 0.2f, 0.0f },{ -0.707f, 0.707f, 0.0f } },
+		{ { 0.2f, 0.2f, 0.0f },{ 0.707f, 0.707f, 0.0f } },
+		{ { 0.2f, 0.2f, 3.0f },{ 0.707f, 0.707f, 0.0f } },
+		{ { -0.2f, 0.2f, 3.0f },{ -0.707f, 0.707f, 0.0f } },
+	};
+
+	mesh->indices = {
+		0, 1, 2, 2, 3, 0,
+		4, 6, 5, 6, 4, 7,
+		0, 3, 4, 3, 7, 4,
+		1, 5, 2, 2, 5, 6,
+		2, 6, 3, 3, 6, 7,
+	};
+
+	gameManager->scene->mesh = mesh;
+}
 
 //void FEnvironment::LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue queue)
 //{

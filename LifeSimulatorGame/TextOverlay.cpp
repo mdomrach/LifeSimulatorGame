@@ -80,45 +80,49 @@ void FTextOverlay::Destroy(FVulkanDevice* vulkanDevice)
 	vkDestroyCommandPool(vulkanDevice->logicalDevice, commandPool, nullptr);
 }
 
-void FTextOverlay::PrepareResources(FVulkanApplication* application)
+
+void FTextOverlay::CreateCommandPool(FVulkanDevice vulkanDevice)
 {
-	auto* vulkanDevice = &application->vulkanDevice;
-
-	static unsigned char font24pixels[STB_FONT_HEIGHT][STB_FONT_WIDTH];
-	STB_FONT_NAME(stbFontData, font24pixels, STB_FONT_HEIGHT);
-
-
-	// Pool
 	VkCommandPoolCreateInfo poolInfo = FVulkanInitializers::CommandPoolCreateInfo();
-	poolInfo.queueFamilyIndex = vulkanDevice->queueFamilyIndices.graphicsFamily;
+	poolInfo.queueFamilyIndex = vulkanDevice.queueFamilyIndices.graphicsFamily;
 	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-	if (vkCreateCommandPool(vulkanDevice->logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
+	if (vkCreateCommandPool(vulkanDevice.logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create command pool!");
 	}
-
-	// Command Buffer
+}
+void FTextOverlay::CreateCommandBuffer(FVulkanDevice vulkanDevice)
+{
 	VkCommandBufferAllocateInfo commandBufferAllocateInfo = FVulkanInitializers::CommandBufferAllocateInfo();
 	commandBufferAllocateInfo.commandPool = commandPool;
 	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	commandBufferAllocateInfo.commandBufferCount = (uint32_t)cmdBuffers.size();
 
-	if (vkAllocateCommandBuffers(vulkanDevice->logicalDevice, &commandBufferAllocateInfo, cmdBuffers.data()) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(vulkanDevice.logicalDevice, &commandBufferAllocateInfo, cmdBuffers.data()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate command buffers");
 	}
+}
 
-	// vertex buffer
+void FTextOverlay::CreateVertexBuffer(FVulkanDevice vulkanDevice)
+{
 	FBufferCreateInfo bufferInfo = {};
 	bufferInfo.buffersize = TEXTOVERLAY_MAX_CHAR_COUNT * sizeof(glm::vec4);
 	bufferInfo.bufferUsageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	bufferInfo.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	if (bufferInfo.Create(*vulkanDevice, vertexBuffer) != VK_SUCCESS)
+	if (bufferInfo.Create(vulkanDevice, vertexBuffer) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create vulkan buffer!");
 	}
+}
+
+void FTextOverlay::CreateFontTexture(FVulkanDevice vulkanDevice, VkQueue graphicsQueue)
+{
+	static unsigned char font24pixels[STB_FONT_HEIGHT][STB_FONT_WIDTH];
+	STB_FONT_NAME(stbFontData, font24pixels, STB_FONT_HEIGHT);
+
 
 	// font texture
 	VkImageCreateInfo imageInfo = FVulkanInitializers::ImageCreateInfo();
@@ -136,41 +140,42 @@ void FTextOverlay::PrepareResources(FVulkanApplication* application)
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 
-	if (vkCreateImage(vulkanDevice->logicalDevice, &imageInfo, nullptr, &image) != VK_SUCCESS)
+	if (vkCreateImage(vulkanDevice.logicalDevice, &imageInfo, nullptr, &image) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate command buffers");
 	}
 
 	VkMemoryRequirements memoryRequirements;
-	vkGetImageMemoryRequirements(vulkanDevice->logicalDevice, image, &memoryRequirements);
+	vkGetImageMemoryRequirements(vulkanDevice.logicalDevice, image, &memoryRequirements);
 
 	VkMemoryAllocateInfo allocInfo = FVulkanInitializers::MemoryAllocateInfo();
 	allocInfo.allocationSize = memoryRequirements.size;
-	allocInfo.memoryTypeIndex = FVulkanCalculator::FindMemoryType(vulkanDevice->physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	allocInfo.memoryTypeIndex = FVulkanCalculator::FindMemoryType(vulkanDevice.physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	if (vkAllocateMemory(vulkanDevice->logicalDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+	if (vkAllocateMemory(vulkanDevice.logicalDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate image memory");
 	}
 
-	vkBindImageMemory(vulkanDevice->logicalDevice, image, imageMemory, 0);
+	vkBindImageMemory(vulkanDevice.logicalDevice, image, imageMemory, 0);
 
 	// staging buffer
 	FBufferCreateInfo stagingbufferInfo = {};
-	bufferInfo.buffersize = allocInfo.allocationSize;
-	bufferInfo.bufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	stagingbufferInfo.buffersize = allocInfo.allocationSize;
+	stagingbufferInfo.bufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	stagingbufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	stagingbufferInfo.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	FVulkanBuffer stagingBuffer;
-	bufferInfo.Create(*vulkanDevice, stagingBuffer);
+	stagingbufferInfo.Create(vulkanDevice, stagingBuffer);
 
 	uint32_t *data;
-	vkMapMemory(vulkanDevice->logicalDevice, stagingBuffer.bufferMemory, 0, allocInfo.allocationSize, 0, (void**)&data);
+	vkMapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory, 0, allocInfo.allocationSize, 0, (void**)&data);
 	memcpy(data, &font24pixels[0][0], STB_FONT_WIDTH * STB_FONT_HEIGHT);
-	vkUnmapMemory(vulkanDevice->logicalDevice, stagingBuffer.bufferMemory);
+	vkUnmapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory);
 
 	// copy to image
-	VkCommandBuffer copyCommandBuffer = FVulkanCommandBufferCalculator::BeginSingleTimeCommands(vulkanDevice->logicalDevice, commandPool);
+	VkCommandBuffer copyCommandBuffer = FVulkanCommandBufferCalculator::BeginSingleTimeCommands(vulkanDevice.logicalDevice, commandPool);
 
 	// prepare for transfer
 	FVulkanTools::SetImageLayout(
@@ -196,14 +201,14 @@ void FTextOverlay::PrepareResources(FVulkanApplication* application)
 		VK_IMAGE_ASPECT_COLOR_BIT,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	
-	FVulkanCommandBufferCalculator::EndSingleTimeCommands(copyCommandBuffer, vulkanDevice->logicalDevice, application->graphicsQueue, commandPool);
-	stagingBuffer.Destroy(vulkanDevice->logicalDevice);
-	
+
+	FVulkanCommandBufferCalculator::EndSingleTimeCommands(copyCommandBuffer, vulkanDevice.logicalDevice, graphicsQueue, commandPool);
+	stagingBuffer.Destroy(vulkanDevice.logicalDevice);
+
 	VkImageViewCreateInfo imageViewInfo = FVulkanInitializers::ImageViewCreateInfo();
 	imageViewInfo.image = image;
 	imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	imageViewInfo.format = imageInfo.format; 
+	imageViewInfo.format = imageInfo.format;
 	imageViewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,	VK_COMPONENT_SWIZZLE_A };
 	imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	imageViewInfo.subresourceRange.baseMipLevel = 0;
@@ -211,7 +216,7 @@ void FTextOverlay::PrepareResources(FVulkanApplication* application)
 	imageViewInfo.subresourceRange.baseArrayLayer = 0;
 	imageViewInfo.subresourceRange.layerCount = 1;
 
-	if (vkCreateImageView(vulkanDevice->logicalDevice, &imageViewInfo, nullptr, &imageView) != VK_SUCCESS)
+	if (vkCreateImageView(vulkanDevice.logicalDevice, &imageViewInfo, nullptr, &imageView) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create texture image view!");
 	}
@@ -232,13 +237,15 @@ void FTextOverlay::PrepareResources(FVulkanApplication* application)
 	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
 
-	if (vkCreateSampler(vulkanDevice->logicalDevice, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+	if (vkCreateSampler(vulkanDevice.logicalDevice, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create texture sampler!");
 	}
+}
 
-	// Descriptor
-	// Font uses a separate descriptor pool
+
+void FTextOverlay::CreateDescriptorPool(FVulkanDevice vulkanDevice)
+{
 	std::array<VkDescriptorPoolSize, 1> poolSizes;
 	poolSizes[0] = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -249,12 +256,13 @@ void FTextOverlay::PrepareResources(FVulkanApplication* application)
 	descriptorPoolInfo.pPoolSizes = poolSizes.data();
 	descriptorPoolInfo.maxSets = 1;
 
-	if (vkCreateDescriptorPool(vulkanDevice->logicalDevice, &descriptorPoolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+	if (vkCreateDescriptorPool(vulkanDevice.logicalDevice, &descriptorPoolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create descriptor pool!");
 	}
-
-	// Descriptor set layout
+}
+void FTextOverlay::CreateDescriptorSetLayout(FVulkanDevice vulkanDevice)
+{
 	std::array<VkDescriptorSetLayoutBinding, 1> setLayoutBindings;
 	setLayoutBindings[0] = {};
 	setLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -266,39 +274,41 @@ void FTextOverlay::PrepareResources(FVulkanApplication* application)
 	descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
 	descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
 
-	if (vkCreateDescriptorSetLayout(vulkanDevice->logicalDevice, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(vulkanDevice.logicalDevice, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create descriptor set layout!");
 	}
-
-	// Pipeline layout
+}
+void FTextOverlay::CreatePipelineLayout(FVulkanDevice vulkanDevice)
+{
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = FVulkanInitializers::PipelineLayoutCreateInfo();
 	pipelineLayoutInfo.setLayoutCount = 1;
 	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = 0;
 
-	if (vkCreatePipelineLayout(vulkanDevice->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(vulkanDevice.logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
-	
-	// Descriptor set
+}
+void FTextOverlay::CreateDescriptorSet(FVulkanDevice vulkanDevice)
+{
 	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = FVulkanInitializers::DescriptorSetAllocateInfo();
 	descriptorSetAllocInfo.descriptorPool = descriptorPool;
 	descriptorSetAllocInfo.descriptorSetCount = 1;
 	descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
 
-	if (vkAllocateDescriptorSets(vulkanDevice->logicalDevice, &descriptorSetAllocInfo, &descriptorSet) != VK_SUCCESS)
+	if (vkAllocateDescriptorSets(vulkanDevice.logicalDevice, &descriptorSetAllocInfo, &descriptorSet) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate descriptor set!");
 	}
-	
+
 	VkDescriptorImageInfo texDescriptor = {};
 	texDescriptor.sampler = sampler;
 	texDescriptor.imageView = imageView;
 	texDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	
+
 	std::array<VkWriteDescriptorSet, 1> writeDescriptorSets;
 	writeDescriptorSets[0] = FVulkanInitializers::WriteDescriptorSet();
 	writeDescriptorSets[0].dstSet = descriptorSet;
@@ -308,16 +318,30 @@ void FTextOverlay::PrepareResources(FVulkanApplication* application)
 	writeDescriptorSets[0].descriptorCount = 1;
 	writeDescriptorSets[0].pImageInfo = &texDescriptor;
 
-	vkUpdateDescriptorSets(vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
-	
-
-	// Pipeline cache
+	vkUpdateDescriptorSets(vulkanDevice.logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
+}
+void FTextOverlay::CreatePipelineCache(FVulkanDevice vulkanDevice)
+{
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo = FVulkanInitializers::PipelineCacheCreateInfo();
 
-	if (vkCreatePipelineCache(vulkanDevice->logicalDevice, &pipelineCacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
+	if (vkCreatePipelineCache(vulkanDevice.logicalDevice, &pipelineCacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create pipeline cache!");
 	}
+}
+void FTextOverlay::PrepareResources(FVulkanApplication* application)
+{
+	auto vulkanDevice = application->vulkanDevice;
+	
+	CreateCommandPool(vulkanDevice);
+	CreateCommandBuffer(vulkanDevice);
+	CreateVertexBuffer(vulkanDevice);
+	CreateFontTexture(vulkanDevice, application->graphicsQueue);
+	CreateDescriptorPool(vulkanDevice);
+	CreateDescriptorSetLayout(vulkanDevice);
+	CreatePipelineLayout(vulkanDevice);
+	CreateDescriptorSet(vulkanDevice);
+	CreatePipelineCache(vulkanDevice);
 }
 
 void FTextOverlay::PrepareRenderPass(FVulkanApplication* application)
@@ -354,6 +378,14 @@ void FTextOverlay::PrepareRenderPass(FVulkanApplication* application)
 
 	// Use subpass dependencies for image layout transitions
 	VkSubpassDependency subpassDependencies[2] = {};
+
+	VkSubpassDependency dependency = {};
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 	// Transition from final to initial (VK_SUBPASS_EXTERNAL refers to all commmands executed outside of the actual renderpass)
 	subpassDependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;

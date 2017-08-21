@@ -86,4 +86,17 @@ private:
 	float nextFPSUpdateTime;
 
 	FTimeManager* timeManager;
+
+
+	void CreateCommandPool(FVulkanDevice vulkanDevice);
+	void CreateCommandBuffer(FVulkanDevice vulkanDevice);
+	void CreateVertexBuffer(FVulkanDevice vulkanDevice);
+	void CreateFontTexture(FVulkanDevice vulkanDevice, VkQueue graphicsQueue);
+	void CreateDescriptorPool(FVulkanDevice vulkanDevice);
+	void CreateDescriptorSetLayout(FVulkanDevice vulkanDevice);
+	void CreatePipelineLayout(FVulkanDevice vulkanDevice);
+	void CreateDescriptorSet(FVulkanDevice vulkanDevice);
+	void CreatePipelineCache(FVulkanDevice vulkanDevice);
 };
+
+

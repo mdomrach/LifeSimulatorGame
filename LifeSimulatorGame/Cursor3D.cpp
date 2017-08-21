@@ -45,26 +45,35 @@ void FVulkanCursor3D::PrepareResources(FVulkanApplication* application)
 	auto vulkanDevice = application->vulkanDevice;
 
 	CreateCommandPool(vulkanDevice);
-	CreateCommandBuffer(vulkanDevice);
-
-	LoadAssets();
-	CreateVertexBuffer(scene, vulkanDevice, commandPool, application->graphicsQueue);
-	CreateIndexBuffer(scene, vulkanDevice, commandPool, application->graphicsQueue);
-	CreateUniformBuffer(vulkanDevice);
-
-	CreateDescriptorPool(vulkanDevice);
 	CreateDescriptorSetLayout(vulkanDevice.logicalDevice);
-	CreateDescriptorSet(vulkanDevice.logicalDevice);
+
+	CreatePipelineLayout(vulkanDevice.logicalDevice);
 	CreatePipelineCache(vulkanDevice);
 
+	// swap chainy
 	PrepareRenderPass(application);
-
 	VkGraphicsPipelineCreateInfo* pipelineInfo = FVulkanPipelineCalculator::CreateGraphicsPipelineInfo(application->swapChain, descriptorSetLayout, vulkanDevice.logicalDevice, renderPass, pipelineLayout);
 	CreateGraphicsPipeline(vulkanDevice.logicalDevice, pipelineInfo);
 	FVulkanPipelineCalculator::DeleteGraphicsPipelineInfo(pipelineInfo);
 
+
+	LoadAssets();
+	CreateBuffers(vulkanDevice, application->graphicsQueue);
+	CreateDescriptorPool(vulkanDevice);
+	CreateDescriptorSet(vulkanDevice.logicalDevice);
+
+
+	CreateCommandBuffer(vulkanDevice);
 	UpdateCommandBuffers();
 }
+
+void FVulkanCursor3D::CreateBuffers(FVulkanDevice vulkanDevice, VkQueue graphicsQueue)
+{
+	CreateVertexBuffer(scene, vulkanDevice, commandPool, graphicsQueue);
+	CreateIndexBuffer(scene, vulkanDevice, commandPool, graphicsQueue);
+	CreateUniformBuffer(vulkanDevice);
+}
+
 
 void FVulkanCursor3D::CreateCommandPool(FVulkanDevice vulkanDevice)
 {
@@ -129,7 +138,7 @@ void FVulkanCursor3D::CreateDescriptorSetLayout(VkDevice logicalDevice)
 		throw std::runtime_error("failed to create descriptor set layout!");
 	}
 }
-void FVulkanCursor3D::CreateDescriptorSet(VkDevice logicalDevice)
+void FVulkanCursor3D::CreatePipelineLayout(VkDevice logicalDevice)
 {
 	// Pipeline layout
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = FVulkanInitializers::PipelineLayoutCreateInfo();
@@ -137,11 +146,15 @@ void FVulkanCursor3D::CreateDescriptorSet(VkDevice logicalDevice)
 	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = 0;
-	
+
 	if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
+}
+
+void FVulkanCursor3D::CreateDescriptorSet(VkDevice logicalDevice)
+{
 	
 
 	VkDescriptorSetLayout layouts[] = { descriptorSetLayout };
@@ -185,29 +198,6 @@ void FVulkanCursor3D::CreatePipelineCache(FVulkanDevice vulkanDevice)
 
 void FVulkanCursor3D::LoadAssets()
 {
-	auto mesh = new FMesh();
-
-	mesh->vertices = {
-		{ { -0.2f, -0.2f, 0.0f },{ -0.707f, -0.707f, 0.0f } },
-		{ { 0.2f, -0.2f, 0.0f },{ 0.707f, -0.707f, 0.0f } },
-		{ { 0.2f, -0.2f, 3.0f },{ 0.707f, -0.707f, 0.0f } },
-		{ { -0.2f, -0.2f, 3.0f },{ -0.707f, -0.707f, 0.0f } },
-		{ { -0.2f, 0.2f, 0.0f },{ -0.707f, 0.707f, 0.0f } },
-		{ { 0.2f, 0.2f, 0.0f },{ 0.707f, 0.707f, 0.0f } },
-		{ { 0.2f, 0.2f, 3.0f },{ 0.707f, 0.707f, 0.0f } },
-		{ { -0.2f, 0.2f, 3.0f },{ -0.707f, 0.707f, 0.0f } },
-	};
-
-	mesh->indices = {
-		0, 1, 2, 2, 3, 0,
-		4, 6, 5, 6, 4, 7,
-		0, 3, 4, 3, 7, 4,
-		1, 5, 2, 2, 5, 6,
-		2, 6, 3, 3, 6, 7,
-	};
-
-	scene->mesh = mesh;
-
 	auto mesh2 = new FMesh();
 	mesh2->vertices = {
 		{ { -5.0f, -5.0f, 0.0f },{ 1.0f, 0.0f, 0.0f } },
@@ -283,7 +273,7 @@ void FVulkanCursor3D::CreateGraphicsPipeline(VkDevice logicalDevice, VkGraphicsP
 	pipelineInfo->pStages = shaderStages.data();
 	pipelineInfo->pVertexInputState = &vertexInputInfo;
 
-	if (vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
+	if (vkCreateGraphicsPipelines(logicalDevice, pipelineCache, 1, pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}

@@ -7,6 +7,7 @@
 
 class FVulkanDevice;
 class FScene;
+class FGameManager;
 
 class FEnvironment
 {
@@ -23,6 +24,7 @@ public:
 	void Destroy(FVulkanDevice vulkanDevice);
 	void DestroyBuffers(FVulkanDevice vulkanDevice);
 
+	void Initialize(FGameManager* gameManager);
 	void PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCreateInfo* pipelineInfo);
 	//void LoadAssets(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue queue);
 	void CreateBuffers(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);

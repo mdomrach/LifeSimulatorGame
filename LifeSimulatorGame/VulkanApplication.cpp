@@ -49,13 +49,27 @@ void FVulkanApplication::InitializeVulkan()
 	CreateWindowSurface();
 
 	SetupDevice();
-	CreateDescriptorSetLayout();
-	CreateCommandPool();
 
+	CreateCommandPool();
+	CreateDescriptorSetLayout();
+
+	// render pass and graphics pipeline
 	InitializeSwapChain();
 
 	LoadScene();
-	PrepareToDisplayScene();
+	cursor3D.Initialize(gameManager);
+	environment.Initialize(gameManager);
+	textOverlay->Initialize(this, vulkanDevice);
+
+	CreateBuffers();
+	CreateDescriptorPool();
+	CreateDescriptorSets();
+	CreateCommandBuffers();
+	BuildCommandBuffers();
+	CreateSemaphores();
+
+	screenGrab->CreateCommandBuffers(vulkanDevice, commandPool, swapChain);
+	screenGrab->BuildCommandBuffers(vulkanDevice, commandPool, swapChain, depthImage, presentQueue);
 }
 
 void FVulkanApplication::Initialize(FGameManager* gameManager)
@@ -102,24 +116,18 @@ void FVulkanApplication::LoadScene()
 	scene->camera = new FCamera(swapChain.extent.width, swapChain.extent.height);
 }
 
-void FVulkanApplication::PrepareToDisplayScene()
+void FVulkanApplication::CreateBuffers()
 {
-	cursor3D.Initialize(gameManager);
-
 	environment.CreateBuffers(scene, vulkanDevice, commandPool, graphicsQueue);
 	//particleFire.CreateBuffers(vulkanDevice);
 	terrain.CreateBuffers(vulkanDevice, commandPool, graphicsQueue);
-	CreateDescriptorPool();
+}
 
+void FVulkanApplication::CreateDescriptorSets()
+{
 	environment.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
 	//particleFire.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
 	terrain.CreateDescriptorSets(vulkanDevice.logicalDevice, descriptorSetLayout, descriptorPool);
-	CreateCommandBuffers();
-	BuildCommandBuffers();
-	textOverlay->Initialize(this, vulkanDevice);
-	screenGrab->CreateCommandBuffers(vulkanDevice, commandPool, swapChain);
-	screenGrab->BuildCommandBuffers(vulkanDevice, commandPool, swapChain, depthImage, presentQueue);
-	CreateSemaphores();
 }
 
 void FVulkanApplication::SetupDevice()

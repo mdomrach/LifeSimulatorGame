@@ -51,19 +51,19 @@ private:
 	void CreateCommandPool(FVulkanDevice vulkanDevice);
 	void CreateCommandBuffer(FVulkanDevice vulkanDevice);
 	void UpdateCommandBuffers();
-	void CreateUniformBuffer(FVulkanDevice vulkanDevice);
-	void CreateVertexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
-	void CreateIndexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
+	void CreateBuffers(FVulkanDevice vulkanDevice, VkQueue graphicsQueue);
 	void CreateDescriptorPool(FVulkanDevice vulkanDevice);
 	void CreateDescriptorSetLayout(VkDevice logicalDevice);
 	void CreateDescriptorSet(VkDevice logicalDevice);
-	//void CreateDescriptorSet(FVulkanDevice vulkanDevice);
 	void CreatePipelineCache(FVulkanDevice vulkanDevice);
 	void PrepareRenderPass(FVulkanApplication* application);
 	void CreateGraphicsPipeline(VkDevice logicalDevice, VkGraphicsPipelineCreateInfo* pipelineInfo);
-	//void PreparePipeline(FVulkanApplication* application);
+	void CreatePipelineLayout(VkDevice logicalDevice);
 
-		
+	void CreateUniformBuffer(FVulkanDevice vulkanDevice);
+	void CreateVertexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
+	void CreateIndexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
+
 	VkPipelineInputAssemblyStateCreateInfo* CreatePipelineInputAssemblyStateCreateInfo();
 	VkPipelineColorBlendStateCreateInfo* CreatePipelineColorBlendStateCreateInfo();
 	VkPipelineDepthStencilStateCreateInfo* CreatePipelineDepthStencilStateCreateInfo();

@@ -122,8 +122,9 @@ public:
 
 	void CreateDescriptorSetLayout();
 	void CreateDescriptorPool();
+	void CreateDescriptorSets();
 	void CreateDepthResources();
-
+	void CreateBuffers();
 
 	FGameManager* gameManager;
 };
