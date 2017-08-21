@@ -28,7 +28,7 @@
 #include "TimeManager.h"
 #include "Terrain.h"
 #include "VulkanDevice.h"
-#include "TextOverlay.h"
+#include "VulkanTextOverlay.h"
 #include <iosfwd>
 #include "VulkanInitializers.h"
 #include "VulkanFactory.h"
@@ -52,7 +52,7 @@ void FVulkanApplication::Initialize(FGameManager* gameManager)
 
 	modelRenderer = new FVulkanModelRenderer();
 	modelRenderer->Initialize(gameManager);
-	textOverlay = new FTextOverlay();
+	textOverlay = new FVulkanTextOverlay();
 	textOverlay->Initialize(gameManager);
 	cursor3D.Initialize(gameManager);
 }
@@ -87,7 +87,7 @@ void FVulkanApplication::UpdateSwapChain()
 	CreateFrameBuffers();
 
 	modelRenderer->UpdateSwapChain(applicationData->vulkanDevice);
-	textOverlay->UpdateSwapChain(this, applicationData->vulkanDevice);
+	textOverlay->UpdateSwapChain();
 	cursor3D.UpdateSwapChain(gameManager);
 	screenGrab->UpdateSwapChain(applicationData->vulkanDevice, this);
 }
@@ -265,7 +265,7 @@ void FVulkanApplication::CleanupSwapChain()
 {
 	screenGrab->Destroy(applicationData->vulkanDevice);
 	cursor3D.Destroy(applicationData->vulkanDevice);
-	textOverlay->Destroy(&applicationData->vulkanDevice);
+	textOverlay->Destroy();
 
 
 	vkDestroyImageView(applicationData->vulkanDevice.logicalDevice, applicationData->depthImageView, nullptr);
@@ -281,7 +281,6 @@ void FVulkanApplication::CleanupSwapChain()
 
 	modelRenderer->DestroyPipelines();
 
-	vkDestroyPipelineLayout(applicationData->vulkanDevice.logicalDevice, applicationData->pipelineLayout, nullptr);
 	vkDestroyRenderPass(applicationData->vulkanDevice.logicalDevice, applicationData->renderPass, nullptr);
 	for (size_t i = 0; i < applicationData->swapChain.imageCount; i++)
 	{
@@ -570,8 +569,6 @@ void FVulkanApplication::OnWindowResized(GLFWwindow* window, int width, int heig
 void FVulkanApplication::UpdateFrame()
 {
 	modelRenderer->UpdateFrame(applicationData->vulkanDevice.logicalDevice);
-
-	textOverlay->UpdateFrame(applicationData->vulkanDevice);
 }
 
 void FVulkanApplication::CreateDepthResources()

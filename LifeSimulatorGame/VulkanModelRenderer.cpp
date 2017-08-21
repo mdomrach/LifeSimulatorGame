@@ -42,12 +42,12 @@ void FVulkanModelRenderer::CreateGraphicsPipeline()
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = 0;
 
-	if (vkCreatePipelineLayout(applicationData->vulkanDevice.logicalDevice, &pipelineLayoutInfo, nullptr, &applicationData->pipelineLayout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(applicationData->vulkanDevice.logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	VkGraphicsPipelineCreateInfo* pipelineInfo = FVulkanPipelineCalculator::CreateGraphicsPipelineInfo(applicationData->swapChain, descriptorSetLayout, applicationData->vulkanDevice.logicalDevice, renderPass, applicationData->pipelineLayout);
+	VkGraphicsPipelineCreateInfo* pipelineInfo = FVulkanPipelineCalculator::CreateGraphicsPipelineInfo(applicationData->swapChain, descriptorSetLayout, applicationData->vulkanDevice.logicalDevice, renderPass, pipelineLayout);
 
 	environment.PreparePipeline(applicationData->vulkanDevice.logicalDevice, pipelineInfo);
 	//particleFire.PreparePipeline(vulkanDevice.logicalDevice, pipelineInfo);
@@ -68,9 +68,12 @@ void FVulkanModelRenderer::Destroy(FVulkanDevice vulkanDevice)
 {
 	environment.Destroy(vulkanDevice);
 	//particleFire.Destroy(vulkanDevice);
+	terrain.Destroy(vulkanDevice);
 
 	vkDestroyDescriptorPool(vulkanDevice.logicalDevice, descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(vulkanDevice.logicalDevice, descriptorSetLayout, nullptr);
+	vkDestroyRenderPass(vulkanDevice.logicalDevice, renderPass, nullptr);
+	vkDestroyPipelineLayout(applicationData->vulkanDevice.logicalDevice, pipelineLayout, nullptr);
 //}
 //
 //void FVulkanModelRenderer::DestroyBuffers(FVulkanDevice vulkanDevice)
@@ -187,9 +190,9 @@ void  FVulkanModelRenderer::BuildCommandBuffers(FVulkanDevice vulkanDevice)
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		environment.BuildCommandBuffers(commandBuffers[i], scene, applicationData->pipelineLayout);
+		environment.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
 		//particleFire.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
-		terrain.BuildCommandBuffers(commandBuffers[i], scene, applicationData->pipelineLayout);
+		terrain.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 

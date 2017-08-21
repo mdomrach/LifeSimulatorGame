@@ -18,8 +18,6 @@ class FVulkanTerrain
 public:
 	void Initialize(FGameManager* gameManager);
 	void Destroy(FVulkanDevice vulkanDevice);
-	void UpdateFrame();
-	void Submit(VkQueue graphicsQueue, uint32_t bufferindex);
 
 public:
 	void LoadAssets();

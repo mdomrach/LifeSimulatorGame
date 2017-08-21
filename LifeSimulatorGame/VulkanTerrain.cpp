@@ -28,17 +28,7 @@ void FVulkanTerrain::Initialize(FGameManager* gameManager)
 
 void FVulkanTerrain::Destroy(FVulkanDevice vulkanDevice)
 {
-
-}
-
-void FVulkanTerrain::UpdateFrame()
-{
-
-}
-
-void FVulkanTerrain::Submit(VkQueue graphicsQueue, uint32_t bufferindex)
-{
-
+	vkDestroyPipeline(vulkanDevice.logicalDevice, graphicsPipeline, nullptr);
 }
 
 void FVulkanTerrain::LoadAssets()

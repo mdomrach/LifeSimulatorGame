@@ -125,6 +125,8 @@
     <ClCompile Include="Cursor3D.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="FileCalculator.cpp" />
+    <ClCompile Include="FPSTextOverlay.cpp" />
+    <ClCompile Include="TextOverlay.cpp" />
     <ClCompile Include="VulkanModelRenderer.cpp" />
     <ClCompile Include="VulkanScreenGrab.cpp" />
     <ClCompile Include="Particle.cpp" />
@@ -151,7 +153,7 @@
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneCalculator.cpp" />
     <ClCompile Include="SleepCalculator.cpp" />
-    <ClCompile Include="TextOverlay.cpp" />
+    <ClCompile Include="VulkanTextOverlay.cpp" />
     <ClCompile Include="TimeManager.cpp" />
     <ClCompile Include="Vertex.cpp" />
     <ClCompile Include="VulkanApplication.cpp" />
@@ -189,6 +191,8 @@
     <ClInclude Include="Cursor3D.h" />
     <ClInclude Include="Environment.h" />
     <ClInclude Include="FileCalculator.h" />
+    <ClInclude Include="FPSTextOverlay.h" />
+    <ClInclude Include="TextOverlay.h" />
     <ClInclude Include="VulkanApplicationData.h" />
     <ClInclude Include="VulkanModelRenderer.h" />
     <ClInclude Include="VulkanScreenGrab.h" />
@@ -221,7 +225,7 @@
     <ClInclude Include="SleepCalculator.h" />
     <ClInclude Include="SwapChainSupportDetails.h" />
     <ClInclude Include="Terrain.h" />
-    <ClInclude Include="TextOverlay.h" />
+    <ClInclude Include="VulkanTextOverlay.h" />
     <ClInclude Include="TimeManager.h" />
     <ClInclude Include="UniformBufferObject.h" />
     <ClInclude Include="Vertex.h" />

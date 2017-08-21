@@ -9,6 +9,8 @@ class FTerrainEditor;
 class FTerrain;
 class FVulkanScreenGrab;
 class FVulkanApplicationData;
+class FTextOverlay;
+class FFPSTextOverlay;
 
 class FGameManager
 {
@@ -22,6 +24,8 @@ public:
 	FTerrain* terrain;
 	FVulkanScreenGrab* screenGrab;
 	FVulkanApplicationData* applicationData;
+	FTextOverlay* textOverlay;
+	FFPSTextOverlay* fpsTextOverlay;
 
 	FGameManager();
 	

@@ -11,6 +11,8 @@
 #include "Terrain.h"
 #include "VulkanScreenGrab.h"
 #include "VulkanApplicationData.h"
+#include "TextOverlay.h"
+#include "FPSTextOverlay.h"
 
 FGameManager::FGameManager()
 {
@@ -23,6 +25,8 @@ FGameManager::FGameManager()
 	terrain = new FTerrain();
 	screenGrab = new FVulkanScreenGrab();
 	applicationData = new FVulkanApplicationData();
+	textOverlay = new FTextOverlay();
+	fpsTextOverlay = new FFPSTextOverlay();
 
 	screenGrab->Initialize(this);
 	cameraController->Initialize(this);
@@ -30,6 +34,7 @@ FGameManager::FGameManager()
 
 	vulkanApplication->Initialize(this);
 	vulkanApplication->InitializeVulkan();
+	fpsTextOverlay->Initialize(this);
 
 	inputManager->Initialize(this);
 
@@ -49,6 +54,7 @@ void FGameManager::MainLoop()
 		glfwPollEvents();
 		timeManager->UpdateTime();
 		inputManager->ProcessInput();
+		fpsTextOverlay->UpdateFrame();
 		cameraController->ProcessInput();
 		screenGrab->ProcessInput();
 		terrainEditor->ProcessInput();

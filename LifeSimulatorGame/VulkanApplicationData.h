@@ -26,7 +26,6 @@ public:
 	FVulkanSwapChain swapChain;
 
 	VkRenderPass renderPass;
-	VkPipelineLayout pipelineLayout;
 
 	VkCommandPool commandPool;
 	VkSemaphore imageAvailableSemaphore;

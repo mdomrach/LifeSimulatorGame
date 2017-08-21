@@ -52,6 +52,7 @@ private:
 	FVulkanApplicationData* applicationData;
 	FScene* scene;
 	VkRenderPass renderPass;
+	VkPipelineLayout pipelineLayout;
 
 //private:
 //	void CreateCommandPool(FVulkanDevice vulkanDevice);

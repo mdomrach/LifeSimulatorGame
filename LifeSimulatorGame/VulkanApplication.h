@@ -53,7 +53,7 @@ private:
 
 public:
 	class FVulkanApplicationData* applicationData;
-	class FTextOverlay *textOverlay = nullptr;
+	class FVulkanTextOverlay *textOverlay = nullptr;
 
 	FVulkanCursor3D cursor3D;
 
