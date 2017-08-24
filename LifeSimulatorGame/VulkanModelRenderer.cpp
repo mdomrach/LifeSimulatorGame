@@ -92,8 +92,10 @@ void FVulkanModelRenderer::Submit(VkQueue graphicsQueue, uint32_t bufferindex)
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
+
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffers[bufferindex];
+	//submitInfo.pCommandBuffers = &vulkanApplication->cursor3D.commandBuffers[bufferindex];
 
 	VkSemaphore signalSemaphores[] = { applicationData->renderFinishedSemaphore };
 	submitInfo.signalSemaphoreCount = 1;
@@ -193,6 +195,17 @@ void  FVulkanModelRenderer::BuildCommandBuffers(FVulkanDevice vulkanDevice)
 		environment.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
 		//particleFire.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
 		terrain.BuildCommandBuffers(commandBuffers[i], scene, pipelineLayout);
+
+
+		//vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanApplication->cursor3D.graphicsPipeline);
+		////vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
+
+		//VkDeviceSize offsets = 0;
+		//vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &vulkanApplication->cursor3D.vertexBuffer.buffer, &offsets);
+
+		//vkCmdBindIndexBuffer(commandBuffers[i], vulkanApplication->cursor3D.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+		//vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(vulkanApplication->cursor3D.indices.size()), 1, 0, 0, 0);
+		////vkCmdDraw(commandBuffers[i], 4, 1, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 

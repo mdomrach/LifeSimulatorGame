@@ -26,10 +26,10 @@ public:
 	void Submit(VkQueue queue, uint32_t bufferindex);
 	void Destroy(FVulkanDevice vulkanDevice);
 
+	std::vector<VkCommandBuffer> commandBuffers;
 private:
 	VkImage screenImage;
 	VkDeviceMemory screenImageMemory;
-	std::vector<VkCommandBuffer> cmdBuffers;
 	VkSubresourceLayout subResourceLayout;
 
 	void InsertImageMemoryBarrier(

@@ -27,10 +27,10 @@ public:
 	void ProcessInput();
 
 private:
-	glm::vec2 GetHitPosition();
-	void Lower(glm::vec2 hitPosition, float maxHeightChange);
-	void Raise(glm::vec2 hitPosition, float maxHeightChange);
-	void Flatten(glm::vec2 hitPosition, float maxHeightChange);
+	glm::vec3 GetHitPosition();
+	void Lower(glm::vec3 hitPosition, float maxHeightChange);
+	void Raise(glm::vec3 hitPosition, float maxHeightChange);
+	void Flatten(glm::vec3 hitPosition, float maxHeightChange);
 
 	float Lerp(float from, float to, float t);
 	float MoveTo(float value, float target, float maxDistance);

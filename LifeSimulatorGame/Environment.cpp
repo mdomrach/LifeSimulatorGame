@@ -23,12 +23,12 @@ void FEnvironment::Initialize(FGameManager* gameManager)
 	auto mesh = new FMesh();
 
 	mesh->vertices = {
-		{ { -0.2f, -0.2f, 0.0f },{ -0.707f, -0.707f, 0.0f } },
-		{ { 0.2f, -0.2f, 0.0f },{ 0.707f, -0.707f, 0.0f } },
+		{ { -0.2f, -0.2f, -3.0f },{ -0.707f, -0.707f, 0.0f } },
+		{ { 0.2f, -0.2f, -3.0f },{ 0.707f, -0.707f, 0.0f } },
 		{ { 0.2f, -0.2f, 3.0f },{ 0.707f, -0.707f, 0.0f } },
 		{ { -0.2f, -0.2f, 3.0f },{ -0.707f, -0.707f, 0.0f } },
-		{ { -0.2f, 0.2f, 0.0f },{ -0.707f, 0.707f, 0.0f } },
-		{ { 0.2f, 0.2f, 0.0f },{ 0.707f, 0.707f, 0.0f } },
+		{ { -0.2f, 0.2f, -3.0f },{ -0.707f, 0.707f, 0.0f } },
+		{ { 0.2f, 0.2f, -3.0f },{ 0.707f, 0.707f, 0.0f } },
 		{ { 0.2f, 0.2f, 3.0f },{ 0.707f, 0.707f, 0.0f } },
 		{ { -0.2f, 0.2f, 3.0f },{ -0.707f, 0.707f, 0.0f } },
 	};
@@ -175,6 +175,7 @@ void FEnvironment::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
 
 	FUniformBufferObject uniformBufferObject = {};
 	uniformBufferObject.model = glm::translate(glm::mat4(), scene->position);
+	uniformBufferObject.model = glm::mat4();
 
 	
 	//uniformBufferObject.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -193,13 +194,13 @@ void FEnvironment::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
 
 void FEnvironment::BuildCommandBuffers(VkCommandBuffer commandBuffer, FScene* scene, VkPipelineLayout pipelineLayout)
 {
-	VkDeviceSize offsets[] = { 0 };
+	//VkDeviceSize offsets[] = { 0 };
 
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(scene->mesh->indices.size()), 1, 0, 0, 0);
+	//vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
+	//vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+	//vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+	//vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(scene->mesh->indices.size()), 1, 0, 0, 0);
 }
 
 void FEnvironment::CreateBuffers(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)

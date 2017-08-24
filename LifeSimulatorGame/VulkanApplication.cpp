@@ -86,9 +86,9 @@ void FVulkanApplication::UpdateSwapChain()
 	CreateDepthResources();
 	CreateFrameBuffers();
 
+	cursor3D.UpdateSwapChain();
 	modelRenderer->UpdateSwapChain(applicationData->vulkanDevice);
 	textOverlay->UpdateSwapChain();
-	cursor3D.UpdateSwapChain();
 	screenGrab->UpdateSwapChain(applicationData->vulkanDevice, this);
 }
 
@@ -569,6 +569,7 @@ void FVulkanApplication::OnWindowResized(GLFWwindow* window, int width, int heig
 void FVulkanApplication::UpdateFrame()
 {
 	modelRenderer->UpdateFrame(applicationData->vulkanDevice.logicalDevice);
+	cursor3D.UpdateFrame();
 }
 
 void FVulkanApplication::CreateDepthResources()

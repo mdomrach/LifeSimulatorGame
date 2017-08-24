@@ -167,6 +167,10 @@
     <None Include="Shaders\terrain.vert" />
     <None Include="Shaders\terrain.frag.spv" />
     <None Include="Shaders\terrain.vert.spv" />
+    <None Include="Shaders\test.frag" />
+    <None Include="Shaders\test.frag.spv" />
+    <None Include="Shaders\test.vert" />
+    <None Include="Shaders\test.vert.spv" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="QueueFamilyIndices.h">

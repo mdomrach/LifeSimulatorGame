@@ -45,7 +45,8 @@ void FVulkanTerrain::LoadAssets()
 			float height = noiseAmplitude * Noise.noise( x * noiseFrequency, y * noiseFrequency);
 
 			FTerrainVertex Vertex;
-			Vertex.pos = { x - numberOfQuads/2, y - numberOfQuads / 2, height };
+			//Vertex.pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };
+			Vertex.pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, 0 };
 			Vertex.normal = glm::vec3(0, 0, 1);
 			terrain->vertices.push_back(Vertex);
 		}
@@ -314,24 +315,25 @@ void FVulkanTerrain::CreateIndexBuffer2(FVulkanDevice vulkanDevice, VkCommandPoo
 
 void FVulkanTerrain::UpdateVertexBuffer()
 {
-	PerlinNoise Noise;
+	//PerlinNoise Noise;
 
-	const float noiseAmplitude = 1.2f;
-	const float noiseFrequency = 2.5f / numberOfVertices;
-	float offset = timeManager->startFrameTime;
+	//const float noiseAmplitude = 1.2f;
+	//const float noiseFrequency = 2.5f / numberOfVertices;
+	//float offset = timeManager->startFrameTime;
 
-	int i = 0;
-	for (int x = 0; x < numberOfVertices; x++)
-	{
-		for (int y = 0; y < numberOfVertices; y++)
-		{
-			float height = noiseAmplitude * Noise.noise((x+ offset) * noiseFrequency, y * noiseFrequency);
+	//int i = 0;
+	//for (int x = 0; x < numberOfVertices; x++)
+	//{
+	//	for (int y = 0; y < numberOfVertices; y++)
+	//	{
+	//		float height = noiseAmplitude * Noise.noise((x+ offset) * noiseFrequency, y * noiseFrequency);
 
-			terrain->vertices[i].pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };
-			terrain->vertices[i].normal = glm::vec3(0, 0, 1);
-			i++;
-		}
-	}
+	//		//terrain->vertices[i].pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };
+	//		terrain->vertices[i].pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, 0 };
+	//		terrain->vertices[i].normal = glm::vec3(0, 0, 1);
+	//		i++;
+	//	}
+	//}
 
 	UpdateNormals();
 

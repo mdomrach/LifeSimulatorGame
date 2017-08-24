@@ -81,19 +81,14 @@ void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)
 	auto screenPosition = glm::vec3(inputManager->currentXMousePos, 600-inputManager->currentYMousePos, temp);
 	auto worldPosition = glm::unProject(screenPosition, scene->camera->view, scene->camera->proj, glm::vec4(0, 0, 800, 600));
 
-	auto worldXPosition = (inputManager->currentXMousePos / 800) * 16 - 8;
-	auto worldYPosition = (inputManager->currentYMousePos / 600) * -16 + 8;
-	inputManager->HitPoint.x = worldXPosition;
-	inputManager->HitPoint.y = worldYPosition;
-	inputManager->HitPoint.z = 0;
+	//auto proj = scene->camera->proj;
+	//proj[1][1] *= -1;
+	//auto worldPosition = glm::unProject(screenPosition, scene->camera->view, proj, glm::vec4(0, 0, 800, 600));
 
-	//inputManager->HitPoint.x = worldPosition.x;
-	//inputManager->HitPoint.y = worldPosition.y;
-	//inputManager->HitPoint.z = worldPosition.z;
-
-	//std::cout << "Screen1: " << inputManager->currentXMousePos << " " << inputManager->currentYMousePos << std::endl;
-	//std::cout << "Screen2: " << worldXPosition << " " << worldYPosition << std::endl;
-	//std::cout << "World:   " << worldPosition.x << " " << worldPosition.y << " " << worldPosition.z << std::endl;
+	inputManager->HitPoint.x = worldPosition.x;
+	inputManager->HitPoint.y = worldPosition.y;
+	inputManager->HitPoint.z = worldPosition.z;
+	//inputManager->HitPoint.z = 0;
 }
 
 glm::vec3 FVulkanScreenGrab::UnProject
@@ -234,14 +229,14 @@ void FVulkanScreenGrab::CreateCommandBuffers(FVulkanDevice vulkanDevice, VkComma
 	vkBindImageMemory(vulkanDevice.logicalDevice, screenImage, screenImageMemory, 0);
 
 	// Command Buffers
-	cmdBuffers.resize(swapChain.imageCount);
+	commandBuffers.resize(swapChain.imageCount);
 
 	VkCommandBufferAllocateInfo commandBufferAllocateInfo = FVulkanInitializers::CommandBufferAllocateInfo();
 	commandBufferAllocateInfo.commandPool = commandPool;
 	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandBufferAllocateInfo.commandBufferCount = (uint32_t)cmdBuffers.size();
+	commandBufferAllocateInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
-	if (vkAllocateCommandBuffers(vulkanDevice.logicalDevice, &commandBufferAllocateInfo, cmdBuffers.data()) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(vulkanDevice.logicalDevice, &commandBufferAllocateInfo, commandBuffers.data()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate command buffers");
 	}
@@ -251,15 +246,15 @@ void FVulkanScreenGrab::BuildCommandBuffers(FVulkanDevice vulkanDevice, VkComman
 {
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = FVulkanInitializers::CommandBufferBeginInfo();
 
-	for (int32_t i = 0; i < cmdBuffers.size(); ++i)
+	for (int32_t i = 0; i < commandBuffers.size(); ++i)
 	{
-		vkBeginCommandBuffer(cmdBuffers[i], &cmdBufferBeginInfo);
+		vkBeginCommandBuffer(commandBuffers[i], &cmdBufferBeginInfo);
 
 		VkImageMemoryBarrier imageMemoryBarrier = FVulkanInitializers::ImageMemoryBarrier();
 
 		// Transition destination image to transfer destination layout
 		InsertImageMemoryBarrier(
-			cmdBuffers[i],
+			commandBuffers[i],
 			screenImage,
 			0,
 			VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -271,7 +266,7 @@ void FVulkanScreenGrab::BuildCommandBuffers(FVulkanDevice vulkanDevice, VkComman
 
 		// Transition swapchain image from present to transfer source layout
 		InsertImageMemoryBarrier(
-			cmdBuffers[i],
+			commandBuffers[i],
 			srcImage,
 			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 			VK_ACCESS_TRANSFER_READ_BIT,
@@ -293,7 +288,7 @@ void FVulkanScreenGrab::BuildCommandBuffers(FVulkanDevice vulkanDevice, VkComman
 
 		// Issue the copy command
 		vkCmdCopyImage(
-			cmdBuffers[i],
+			commandBuffers[i],
 			srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			screenImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			1,
@@ -301,7 +296,7 @@ void FVulkanScreenGrab::BuildCommandBuffers(FVulkanDevice vulkanDevice, VkComman
 
 		// Transition destination image to general layout, which is the required layout for mapping the image memory later on
 		InsertImageMemoryBarrier(
-			cmdBuffers[i],
+			commandBuffers[i],
 			screenImage,
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_MEMORY_READ_BIT,
@@ -313,7 +308,7 @@ void FVulkanScreenGrab::BuildCommandBuffers(FVulkanDevice vulkanDevice, VkComman
 
 		// Transition back the swap chain image after the blit is done
 		InsertImageMemoryBarrier(
-			cmdBuffers[i],
+			commandBuffers[i],
 			srcImage,
 			VK_ACCESS_TRANSFER_READ_BIT,
 			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
@@ -324,7 +319,7 @@ void FVulkanScreenGrab::BuildCommandBuffers(FVulkanDevice vulkanDevice, VkComman
 			VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
 
 
-		if (vkEndCommandBuffer(cmdBuffers[i]) != VK_SUCCESS)
+		if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("failed to end command buffer!");
 		}
@@ -336,7 +331,7 @@ void FVulkanScreenGrab::Submit(VkQueue queue, uint32_t bufferindex)
 {
 	VkSubmitInfo submitInfo = FVulkanInitializers::SubmitInfo();
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuffers[bufferindex];
+	submitInfo.pCommandBuffers = &commandBuffers[bufferindex];
 
 	vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(queue);

@@ -38,7 +38,7 @@ void FTerrainEditor::ProcessInput()
 	}
 
 
-	glm::vec2 hitPosition = GetHitPosition();
+	glm::vec3 hitPosition = GetHitPosition();
 	if (inputManager->GetMouseState(GLFW_MOUSE_BUTTON_LEFT))
 	{
 		float maxHeightChange = timeManager->deltaFrameTime;
@@ -58,7 +58,7 @@ void FTerrainEditor::ProcessInput()
 	}
 }
 
-void FTerrainEditor::Flatten(glm::vec2 hitPosition, float maxHeightChange)
+void FTerrainEditor::Flatten(glm::vec3 hitPosition, float maxHeightChange)
 {
 	int flattenVertCount = 0;
 	float flattenHeightSum = 0.0f;
@@ -66,8 +66,7 @@ void FTerrainEditor::Flatten(glm::vec2 hitPosition, float maxHeightChange)
 	for (int i = 0; i < terrain->vertices.size(); i++)
 	{
 		auto vertexPosition = terrain->vertices[i].pos;
-		auto vertexPosition2D = glm::vec2(vertexPosition.x, vertexPosition.y);
-		float distance = glm::distance(vertexPosition2D, hitPosition);
+		float distance = glm::distance(vertexPosition, hitPosition);
 		if (distance < maxDistance)
 		{
 			flattenVertCount++;
@@ -82,8 +81,7 @@ void FTerrainEditor::Flatten(glm::vec2 hitPosition, float maxHeightChange)
 	for (int i = 0; i < terrain->vertices.size(); i++)
 	{
 		auto vertexPosition = terrain->vertices[i].pos;
-		auto vertexPosition2D = glm::vec2(vertexPosition.x, vertexPosition.y);
-		float distance = glm::distance(vertexPosition2D, hitPosition);
+		float distance = glm::distance(vertexPosition, hitPosition);
 		if (distance < maxDistance)
 		{
 			terrain->vertices[i].pos.z = MoveTo(terrain->vertices[i].pos.z, flattenAverage, maxHeightChange);
@@ -91,13 +89,12 @@ void FTerrainEditor::Flatten(glm::vec2 hitPosition, float maxHeightChange)
 	}
 }
 
-void FTerrainEditor::Lower(glm::vec2 hitPosition, float maxHeightChange)
+void FTerrainEditor::Lower(glm::vec3 hitPosition, float maxHeightChange)
 {
 	for (int i = 0; i < terrain->vertices.size(); i++)
 	{
 		auto vertexPosition = terrain->vertices[i].pos;
-		auto vertexPosition2D = glm::vec2(vertexPosition.x, vertexPosition.y);
-		float distance = glm::distance(vertexPosition2D, hitPosition);
+		float distance = glm::distance(vertexPosition, hitPosition);
 		if (distance < maxDistance)
 		{
 			terrain->vertices[i].pos.z -= Lerp(maxHeightChange, 0.0f, distance / maxDistance);
@@ -105,14 +102,13 @@ void FTerrainEditor::Lower(glm::vec2 hitPosition, float maxHeightChange)
 	}	
 }
 
-void FTerrainEditor::Raise(glm::vec2 hitPosition, float maxHeightChange)
+void FTerrainEditor::Raise(glm::vec3 hitPosition, float maxHeightChange)
 {
 
 	for (int i = 0; i < terrain->vertices.size(); i++)
 	{
 		auto vertexPosition = terrain->vertices[i].pos;
-		auto vertexPosition2D = glm::vec2(vertexPosition.x, vertexPosition.y);
-		float distance = glm::distance(vertexPosition2D, hitPosition);
+		float distance = glm::distance(vertexPosition, hitPosition);
 		if (distance < maxDistance)
 		{
 			terrain->vertices[i].pos.z += Lerp(maxHeightChange, 0.0f, distance / maxDistance);
@@ -120,11 +116,11 @@ void FTerrainEditor::Raise(glm::vec2 hitPosition, float maxHeightChange)
 	}
 }
 
-glm::vec2 FTerrainEditor::GetHitPosition()
+glm::vec3 FTerrainEditor::GetHitPosition()
 {
 	scene->position = inputManager->HitPoint;
 
-	return glm::vec2(inputManager->HitPoint);
+	return glm::vec3(inputManager->HitPoint);
 }
 
 float FTerrainEditor::MoveTo(float current, float target, float maxDelta)
