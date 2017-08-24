@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 class FScene;
 class FInputManager;
 class FVulkanApplication;
@@ -24,7 +26,9 @@ public:
 	FTerrain* terrain;
 	FVulkanScreenGrab* screenGrab;
 	FVulkanApplicationData* applicationData;
-	FTextOverlay* textOverlay;
+
+	std::vector<FTextOverlay*> textOverlay;
+
 	FFPSTextOverlay* fpsTextOverlay;
 
 	FGameManager();

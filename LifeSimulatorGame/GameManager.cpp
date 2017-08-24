@@ -25,7 +25,7 @@ FGameManager::FGameManager()
 	terrain = new FTerrain();
 	screenGrab = new FVulkanScreenGrab();
 	applicationData = new FVulkanApplicationData();
-	textOverlay = new FTextOverlay();
+	//textOverlay = new FTextOverlay();
 	fpsTextOverlay = new FFPSTextOverlay();
 
 	screenGrab->Initialize(this);

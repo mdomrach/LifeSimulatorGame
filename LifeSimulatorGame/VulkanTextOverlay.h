@@ -36,7 +36,9 @@ public:
 	void UpdateTextOverlay();
 private:
 	FVulkanApplicationData* applicationData;
-	FTextOverlay* textOverlay;
+	FGameManager* gameManager;
+	//std::vector<FTextOverlay*> textOverlay;
+	//FTextOverlay* textOverlay;
 
 
 	VkDescriptorPool descriptorPool;

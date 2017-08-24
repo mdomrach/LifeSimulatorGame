@@ -10,12 +10,13 @@ void FFPSTextOverlay::Initialize(FGameManager* gameManager)
 {
 	vulkanTextOverlay = gameManager->vulkanApplication->textOverlay;
 	timeManager = gameManager->timeManager;
-	textOverlay = gameManager->textOverlay;
 
-
+	textOverlay = new FTextOverlay();
 	textOverlay->x = 5.0f;
 	textOverlay->y = 5.0f;
 	textOverlay->align = ETextAlign::alignLeft;
+
+	gameManager->textOverlay.push_back(textOverlay);
 }
 
 void FFPSTextOverlay::UpdateFrame()

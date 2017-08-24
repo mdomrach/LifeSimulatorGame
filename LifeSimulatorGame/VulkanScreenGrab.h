@@ -4,6 +4,7 @@
 #include "VulkanBuffer.h"
 #include <vector>
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
@@ -14,6 +15,7 @@ class FInputManager;
 class FVulkanApplication;
 class FScene;
 class FVulkanApplicationData;
+class FTextOverlay;
 
 class FVulkanScreenGrab
 {
@@ -58,12 +60,7 @@ private:
 	const char* data;
 	float totalDepth = 0;
 
-
-	glm::vec3 UnProject
-	(
-		glm::vec3 const & win,
-		glm::mat4 const & model,
-		glm::mat4  const & proj
-		);
+	FTextOverlay* screenPositionTextOverlay;
+	FTextOverlay* worldPositionTextOverlay;
 };
 

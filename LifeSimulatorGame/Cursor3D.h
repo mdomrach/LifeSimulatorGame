@@ -49,7 +49,6 @@ public:
 private:
 
 	FVulkanApplicationData* applicationData;
-	FTextOverlay* textOverlay;
 	FScene* scene;
 
 	VkDescriptorPool descriptorPool;

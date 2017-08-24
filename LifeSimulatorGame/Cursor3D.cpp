@@ -19,7 +19,7 @@
 void FVulkanCursor3D::Initialize(FGameManager* gameManager)
 {
 	applicationData = gameManager->applicationData;
-	textOverlay = gameManager->textOverlay;
+
 	scene = gameManager->scene;
 }
 

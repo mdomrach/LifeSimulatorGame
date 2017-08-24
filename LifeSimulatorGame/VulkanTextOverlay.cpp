@@ -16,7 +16,7 @@
 void FVulkanTextOverlay::Initialize(FGameManager* gameManager)
 {
 	applicationData = gameManager->applicationData;
-	textOverlay = gameManager->textOverlay;
+	this->gameManager = gameManager;
 }
 
 void FVulkanTextOverlay::UpdateSwapChain()
@@ -740,6 +740,10 @@ void FVulkanTextOverlay::UpdateTextOverlay()
 {
 	auto logicalDevice = applicationData->vulkanDevice.logicalDevice;
 	BeginTextUpdate(logicalDevice);
-	AddText(textOverlay->text, textOverlay->x, textOverlay->y, textOverlay->align);
+	for (int i = 0; i < gameManager->textOverlay.size(); i++)
+	{
+		auto textOverlay = gameManager->textOverlay[i];
+		AddText(textOverlay->text, textOverlay->x, textOverlay->y, textOverlay->align);
+	}
 	EndTextUpdate(logicalDevice);
 }

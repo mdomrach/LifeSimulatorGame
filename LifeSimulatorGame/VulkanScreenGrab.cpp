@@ -19,6 +19,7 @@
 #include "InputManager.h"
 #include "Scene.h"
 #include "Camera.h"
+#include "TextOverlay.h"
 
 //#define GLM_FORCE_RADIANS
 //#include <glm/glm.hpp>
@@ -36,6 +37,20 @@ void FVulkanScreenGrab::Initialize(FGameManager* gameManager)
 	isScreenShot = false;
 	data = nullptr;
 	writeDepthToFile = false;
+
+	screenPositionTextOverlay = new FTextOverlay();
+	screenPositionTextOverlay->x = 5.0f;
+	screenPositionTextOverlay->y = 25.0f;
+	screenPositionTextOverlay->align = ETextAlign::alignLeft;
+	screenPositionTextOverlay->text = "screenPositionTextOverlay";
+	gameManager->textOverlay.push_back(screenPositionTextOverlay);
+
+	worldPositionTextOverlay = new FTextOverlay();
+	worldPositionTextOverlay->x = 5.0f;
+	worldPositionTextOverlay->y = 45.0f;
+	worldPositionTextOverlay->align = ETextAlign::alignLeft;
+	worldPositionTextOverlay->text = "worldPositionTextOverlay";
+	gameManager->textOverlay.push_back(worldPositionTextOverlay);
 }
 
 void FVulkanScreenGrab::UpdateSwapChain(FVulkanDevice vulkanDevice, FVulkanApplication* application)
@@ -81,37 +96,10 @@ void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)
 	auto screenPosition = glm::vec3(inputManager->currentXMousePos, 600-inputManager->currentYMousePos, temp);
 	auto worldPosition = glm::unProject(screenPosition, scene->camera->view, scene->camera->proj, glm::vec4(0, 0, 800, 600));
 
-	//auto proj = scene->camera->proj;
-	//proj[1][1] *= -1;
-	//auto worldPosition = glm::unProject(screenPosition, scene->camera->view, proj, glm::vec4(0, 0, 800, 600));
+	screenPositionTextOverlay->text = std::to_string(screenPosition.x) + " " + std::to_string(screenPosition.y) + " " + std::to_string(screenPosition.z);
+	worldPositionTextOverlay->text = std::to_string(worldPosition.x) + " " + std::to_string(worldPosition.y) + " " + std::to_string(worldPosition.z);
 
-	inputManager->HitPoint.x = worldPosition.x;
-	inputManager->HitPoint.y = worldPosition.y;
-	inputManager->HitPoint.z = worldPosition.z;
-	//inputManager->HitPoint.z = 0;
-}
-
-glm::vec3 FVulkanScreenGrab::UnProject
-(
-	glm::vec3 const & win,
-	glm::mat4 const & model,
-	glm::mat4  const & proj
-)
-{
-	glm::mat4 Inverse = inverse(proj * model);
-
-	glm::vec4 tmp = glm::vec4(win, 1);
-#		if GLM_DEPTH_CLIP_SPACE == GLM_DEPTH_ZERO_TO_ONE
-	tmp.x = tmp.x * static_cast<T>(2) - static_cast<T>(1);
-	tmp.y = tmp.y * static_cast<T>(2) - static_cast<T>(1);
-#		else
-	tmp = tmp * 2.0f - 1.0f;
-#		endif
-
-	glm::vec4 obj = Inverse * tmp;
-	obj /= obj.w;
-
-	return glm::vec3(obj);
+	inputManager->HitPoint = worldPosition;
 }
 
 void FVulkanScreenGrab::MapMemory(FVulkanDevice vulkanDevice)
