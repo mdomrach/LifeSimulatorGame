@@ -25,7 +25,7 @@ void FFPSTextOverlay::UpdateFrame()
 	if (timeManager->startFrameTime > nextFPSUpdateTime)
 	{
 		int fps = frameCount;
-		textOverlay->text = std::to_string(fps);
+		textOverlay->text = "FPS: "+std::to_string(fps);
 		vulkanTextOverlay->UpdateTextOverlay();
 		frameCount = 0;
 		nextFPSUpdateTime++;

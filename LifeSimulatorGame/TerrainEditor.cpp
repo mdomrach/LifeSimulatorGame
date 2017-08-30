@@ -46,13 +46,13 @@ void FTerrainEditor::ProcessInput()
 		switch (terraformMode)
 		{
 		case TerraformMode::lower:
-			Lower(hitPosition, maxHeightChange);
+			Lower(hitPosition, 2*maxHeightChange);
 			break;
 		case TerraformMode::raise:
-			Raise(hitPosition, maxHeightChange);
+			Raise(hitPosition, 2*maxHeightChange);
 			break;
 		case TerraformMode::flatten:
-			Flatten(hitPosition, maxHeightChange);
+			Flatten(hitPosition, 2*maxHeightChange);
 			break;
 		}
 	}
@@ -84,7 +84,7 @@ void FTerrainEditor::Flatten(glm::vec3 hitPosition, float maxHeightChange)
 		float distance = glm::distance(vertexPosition, hitPosition);
 		if (distance < maxDistance)
 		{
-			terrain->vertices[i].pos.z = MoveTo(terrain->vertices[i].pos.z, flattenAverage, maxHeightChange);
+			terrain->vertices[i].pos.z = MoveTo(terrain->vertices[i].pos.z, flattenAverage, maxHeightChange * (1 - distance / maxDistance));
 		}
 	}
 }

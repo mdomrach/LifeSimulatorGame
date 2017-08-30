@@ -15,7 +15,6 @@ class FInputManager;
 class FVulkanApplication;
 class FScene;
 class FVulkanApplicationData;
-class FTextOverlay;
 
 class FVulkanScreenGrab
 {
@@ -59,8 +58,5 @@ private:
 
 	const char* data;
 	float totalDepth = 0;
-
-	FTextOverlay* screenPositionTextOverlay;
-	FTextOverlay* worldPositionTextOverlay;
 };
 

@@ -45,8 +45,7 @@ void FVulkanTerrain::LoadAssets()
 			float height = noiseAmplitude * Noise.noise( x * noiseFrequency, y * noiseFrequency);
 
 			FTerrainVertex Vertex;
-			//Vertex.pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };
-			Vertex.pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, 0 };
+			Vertex.pos = { scale * (x - numberOfQuads / 2), scale * (y - numberOfQuads / 2), height };
 			Vertex.normal = glm::vec3(0, 0, 1);
 			terrain->vertices.push_back(Vertex);
 		}

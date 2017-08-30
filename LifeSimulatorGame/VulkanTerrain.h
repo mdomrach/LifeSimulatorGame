@@ -57,8 +57,9 @@ private:
 	VkPipelineColorBlendStateCreateInfo* CreatePipelineColorBlendStateCreateInfo();
 	VkPipelineDepthStencilStateCreateInfo* CreatePipelineDepthStencilStateCreateInfo();
 
-	const int numberOfQuads = 16;
-	const int numberOfVertices = 17;
+	const float scale = 0.1f;
+	const int numberOfQuads = 100;
+	const int numberOfVertices = 101;
 	int GetVertexIndex(int x, int y);
 
 	void CreateVertexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);

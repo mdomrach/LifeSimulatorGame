@@ -19,7 +19,6 @@
 #include "InputManager.h"
 #include "Scene.h"
 #include "Camera.h"
-#include "TextOverlay.h"
 
 //#define GLM_FORCE_RADIANS
 //#include <glm/glm.hpp>
@@ -37,20 +36,6 @@ void FVulkanScreenGrab::Initialize(FGameManager* gameManager)
 	isScreenShot = false;
 	data = nullptr;
 	writeDepthToFile = false;
-
-	screenPositionTextOverlay = new FTextOverlay();
-	screenPositionTextOverlay->x = 5.0f;
-	screenPositionTextOverlay->y = 25.0f;
-	screenPositionTextOverlay->align = ETextAlign::alignLeft;
-	screenPositionTextOverlay->text = "screenPositionTextOverlay";
-	gameManager->textOverlay.push_back(screenPositionTextOverlay);
-
-	worldPositionTextOverlay = new FTextOverlay();
-	worldPositionTextOverlay->x = 5.0f;
-	worldPositionTextOverlay->y = 45.0f;
-	worldPositionTextOverlay->align = ETextAlign::alignLeft;
-	worldPositionTextOverlay->text = "worldPositionTextOverlay";
-	gameManager->textOverlay.push_back(worldPositionTextOverlay);
 }
 
 void FVulkanScreenGrab::UpdateSwapChain(FVulkanDevice vulkanDevice, FVulkanApplication* application)
@@ -95,9 +80,6 @@ void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)
 
 	auto screenPosition = glm::vec3(inputManager->currentXMousePos, 600-inputManager->currentYMousePos, temp);
 	auto worldPosition = glm::unProject(screenPosition, scene->camera->view, scene->camera->proj, glm::vec4(0, 0, 800, 600));
-
-	screenPositionTextOverlay->text = std::to_string(screenPosition.x) + " " + std::to_string(screenPosition.y) + " " + std::to_string(screenPosition.z);
-	worldPositionTextOverlay->text = std::to_string(worldPosition.x) + " " + std::to_string(worldPosition.y) + " " + std::to_string(worldPosition.z);
 
 	inputManager->HitPoint = worldPosition;
 }
