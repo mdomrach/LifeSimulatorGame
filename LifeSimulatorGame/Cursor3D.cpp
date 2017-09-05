@@ -16,6 +16,12 @@
 #include "VulkanBufferCalculator.h"
 #include "TerrainVertex.h"
 
+#include "Scene.h"
+#include "Camera.h"
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "Mesh.h"
+
 void FVulkanCursor3D::Initialize(FGameManager* gameManager)
 {
 	applicationData = gameManager->applicationData;
@@ -74,7 +80,9 @@ void FVulkanCursor3D::Destroy()
 {
 	auto logicalDevice = applicationData->vulkanDevice.logicalDevice;
 
+	uniformBuffer.Destroy(logicalDevice);
 	vertexBuffer.Destroy(logicalDevice);
+	indexBuffer.Destroy(logicalDevice);
 	vkDestroyDescriptorSetLayout(logicalDevice, descriptorSetLayout, nullptr);
 	vkDestroyDescriptorPool(logicalDevice, descriptorPool, nullptr);
 	vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
@@ -84,9 +92,6 @@ void FVulkanCursor3D::Destroy()
 	vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
 }
 
-#include "Scene.h"
-#include "Camera.h"
-#include <glm/gtc/matrix_transform.hpp>
 void FVulkanCursor3D::UpdateFrame()
 {
 	//static auto startTime = std::chrono::high_resolution_clock::now();
@@ -149,8 +154,6 @@ void FVulkanCursor3D::CreateUniformBuffer()
 	VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, uniformBuffer.buffer, uniformBuffer.bufferMemory);
 }
-
-#include "Mesh.h"
 
 void FVulkanCursor3D::CreateVertexBuffer()
 {
