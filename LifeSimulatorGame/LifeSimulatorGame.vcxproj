@@ -41,7 +41,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -119,6 +119,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AttachedMesh.cpp" />
+    <ClCompile Include="AttachedVertex.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="BufferCreateInfo.cpp" />
     <ClCompile Include="CameraController.cpp" />
@@ -126,7 +128,12 @@
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="FileCalculator.cpp" />
     <ClCompile Include="FPSTextOverlay.cpp" />
+    <ClCompile Include="TerrainCalculator.cpp" />
+    <ClCompile Include="TerrainDisplayManager.cpp" />
+    <ClCompile Include="TerrainDisplayMesh.cpp" />
+    <ClCompile Include="TerrainManager.cpp" />
     <ClCompile Include="TextOverlay.cpp" />
+    <ClCompile Include="Triangle.cpp" />
     <ClCompile Include="VulkanModelRenderer.cpp" />
     <ClCompile Include="VulkanScreenGrab.cpp" />
     <ClCompile Include="Particle.cpp" />
@@ -189,14 +196,25 @@
     <None Include="Textures\particle_smoke.ktx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AttachedMesh.h" />
+    <ClInclude Include="AttachedVertex.h" />
+    <ClInclude Include="AttachedVertices.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BufferCreateInfo.h" />
     <ClInclude Include="CameraController.h" />
     <ClInclude Include="Cursor3D.h" />
+    <ClInclude Include="Edges.h" />
     <ClInclude Include="Environment.h" />
     <ClInclude Include="FileCalculator.h" />
     <ClInclude Include="FPSTextOverlay.h" />
+    <ClInclude Include="TerrainCalculator.h" />
+    <ClInclude Include="TerrainDisplayManager.h" />
+    <ClInclude Include="TerrainDisplayMesh.h" />
+    <ClInclude Include="TerrainManager.h" />
     <ClInclude Include="TextOverlay.h" />
+    <ClInclude Include="Triangle.h" />
+    <ClInclude Include="Triangles.h" />
+    <ClInclude Include="Vertices.h" />
     <ClInclude Include="VulkanApplicationData.h" />
     <ClInclude Include="VulkanModelRenderer.h" />
     <ClInclude Include="VulkanScreenGrab.h" />

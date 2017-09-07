@@ -5,6 +5,8 @@ class FTerrain;
 class FGameManager;
 class FTimeManager;
 class FScene;
+class FTerrainManager;
+class FTerrainDisplayManager;
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -18,7 +20,9 @@ private:
 	FScene* scene;
 	FInputManager* inputManager;
 	FTerrain* terrain;
+	FTerrainDisplayManager* terrainDisplayManager;
 	FTimeManager* timeManager;
+	FTerrainManager* terrainManager;
 
 	const int numberOfQuads = 16;
 	const int numberOfVertices = 17;

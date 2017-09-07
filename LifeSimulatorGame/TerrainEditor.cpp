@@ -6,6 +6,8 @@
 #include "VulkanApplication.h"
 #include "Terrain.h"
 #include "Scene.h"
+#include "TerrainDisplayManager.h"
+#include "TerrainManager.h"
 
 void FTerrainEditor::Initialize(FGameManager* GameManager)
 {
@@ -13,7 +15,8 @@ void FTerrainEditor::Initialize(FGameManager* GameManager)
 	terrain = GameManager->terrain;
 	timeManager = GameManager->timeManager;
 	scene = GameManager->scene;
-
+	terrainDisplayManager = GameManager->terrainDisplayManager;
+	terrainManager = GameManager->terrainManager;
 
 	inputManager->MonitorMouseState(GLFW_MOUSE_BUTTON_LEFT);
 	inputManager->MonitorKeyState(GLFW_KEY_1);
@@ -55,6 +58,9 @@ void FTerrainEditor::ProcessInput()
 			Flatten(hitPosition, 2*maxHeightChange);
 			break;
 		}
+
+		terrainManager->RecalculateNormals();
+		terrainDisplayManager->UpdateTerrainDisplayFromTerrain();
 	}
 }
 

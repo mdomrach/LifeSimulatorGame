@@ -11,7 +11,7 @@ class FVulkanDevice;
 class FScene;
 class FTimeManager;
 class FGameManager;
-class FTerrain;
+struct FTerrainDisplayMesh;
 
 class FVulkanTerrain
 {
@@ -20,8 +20,6 @@ public:
 	void Destroy(FVulkanDevice vulkanDevice);
 
 public:
-	void LoadAssets();
-
 	void PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCreateInfo* pipelineInfo);
 	void CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 	void CreateDescriptorSets(VkDevice logicalDevice, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool);
@@ -34,7 +32,6 @@ public:
 
 private:
 	void UpdateVertexBuffer();
-	void UpdateNormals();
 
 	void *verticesMemory;
 	void *indicesMemory;
@@ -42,30 +39,22 @@ private:
 	VkPipeline graphicsPipeline;
 	VkDescriptorSet descriptorSet;
 
-	FTerrain* terrain;
+	FTerrainDisplayMesh* terrainDisplayMesh;
 	FVulkanBuffer uniformBuffer;
 	FVulkanBuffer vertexBuffer;
 	FVulkanBuffer indexBuffer;
 
 	FTimeManager* timeManager;
 
-	void CreateUniformBuffer(FVulkanDevice vulkanDevice);
-	void CreateVertexBuffer(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
+	void CreateUniformBuffer(FVulkanDevice vulkanDevice);;
 	void CreateIndexBuffer(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 
 	VkPipelineInputAssemblyStateCreateInfo* CreatePipelineInputAssemblyStateCreateInfo();
 	VkPipelineColorBlendStateCreateInfo* CreatePipelineColorBlendStateCreateInfo();
 	VkPipelineDepthStencilStateCreateInfo* CreatePipelineDepthStencilStateCreateInfo();
 
-	const float scale = 0.1f;
-	const int numberOfQuads = 100;
-	const int numberOfVertices = 101;
-	int GetVertexIndex(int x, int y);
-
 	void CreateVertexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
-	void CreateIndexBuffer2(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue);
 
-	void UpdateIndexBuffer();
 	void UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene);
 };
 

@@ -13,6 +13,9 @@ class FVulkanScreenGrab;
 class FVulkanApplicationData;
 class FTextOverlay;
 class FFPSTextOverlay;
+struct FTerrainDisplayMesh;
+class FTerrainManager;
+class FTerrainDisplayManager;
 
 class FGameManager
 {
@@ -24,8 +27,11 @@ public:
 	FCameraController* cameraController;
 	FTerrainEditor* terrainEditor;
 	FTerrain* terrain;
+	FTerrainDisplayMesh* terrainDisplayMesh;
 	FVulkanScreenGrab* screenGrab;
 	FVulkanApplicationData* applicationData;
+	FTerrainManager* terrainManager;
+	FTerrainDisplayManager* terrainDisplayManager;
 
 	std::vector<FTextOverlay*> textOverlay;
 

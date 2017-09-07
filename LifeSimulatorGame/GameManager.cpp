@@ -9,10 +9,13 @@
 #include "CameraController.h"
 #include "TerrainEditor.h"
 #include "Terrain.h"
+#include "TerrainDisplayMesh.h"
 #include "VulkanScreenGrab.h"
 #include "VulkanApplicationData.h"
 #include "TextOverlay.h"
 #include "FPSTextOverlay.h"
+#include "TerrainManager.h"
+#include "TerrainDisplayManager.h"
 
 FGameManager::FGameManager()
 {
@@ -27,6 +30,13 @@ FGameManager::FGameManager()
 	applicationData = new FVulkanApplicationData();
 	//textOverlay = new FTextOverlay();
 	fpsTextOverlay = new FFPSTextOverlay();
+	terrainDisplayMesh = new FTerrainDisplayMesh();
+	terrainManager = new FTerrainManager();
+	terrainDisplayManager = new FTerrainDisplayManager();
+
+	terrainManager->Initialize(this);
+	terrainDisplayManager->Initialize(this);
+	terrainDisplayManager->SetupDisplayMesh();
 
 	screenGrab->Initialize(this);
 	cameraController->Initialize(this);

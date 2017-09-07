@@ -10,6 +10,9 @@ void main()
 	vec3 normal = normalize(fragNormal);
 	vec3 lightDirection = vec3(0.577, 0.577, 0.577);
 	float lambertDiffuse = dot(normal, lightDirection);
-	
-    outColor = vec4(lambertDiffuse, lambertDiffuse, lambertDiffuse, 1.0);
+
+	vec3 lightColor = vec3(0.5, 0.5, 0.5);
+	vec3 ambientColor = vec3(0.5, 0.5, 0.5);
+
+    outColor = vec4(lambertDiffuse * lightColor + ambientColor, 1.0);
 }

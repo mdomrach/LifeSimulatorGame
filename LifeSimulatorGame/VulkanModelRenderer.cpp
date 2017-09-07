@@ -15,7 +15,7 @@ void FVulkanModelRenderer::Initialize(FGameManager* gameManager)
 
 	environment.Initialize(gameManager);
 	terrain.Initialize(gameManager);
-	terrain.LoadAssets();
+	//terrain.LoadAssets();
 }
 
 void FVulkanModelRenderer::InitializeVulkan(FVulkanDevice vulkanDevice)
