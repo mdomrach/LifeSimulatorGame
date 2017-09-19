@@ -164,7 +164,7 @@ void FVulkanTerrain::BuildCommandBuffers(VkCommandBuffer commandBuffer, FScene* 
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(terrainDisplayMesh->triangles.vertexIndicesCount), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(terrainDisplayMesh->triangles.vertexIndices.size() * 3), 1, 0, 0, 0);
 }
 
 void FVulkanTerrain::CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
@@ -176,7 +176,7 @@ void FVulkanTerrain::CreateBuffers(FVulkanDevice vulkanDevice, VkCommandPool com
 
 void FVulkanTerrain::CreateIndexBuffer(FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	VkDeviceSize bufferSize = sizeof(uint32_t) * terrainDisplayMesh->triangles.vertexIndicesCount;
+	VkDeviceSize bufferSize = sizeof(uint32_t) * terrainDisplayMesh->triangles.vertexIndices.size() * 3;
 
 	FVulkanBuffer stagingBuffer;
 	VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -185,7 +185,7 @@ void FVulkanTerrain::CreateIndexBuffer(FVulkanDevice vulkanDevice, VkCommandPool
 
 	void* data;
 	vkMapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, terrainDisplayMesh->triangles.vertexIndices, bufferSize);
+	memcpy(data, terrainDisplayMesh->triangles.vertexIndices.data(), bufferSize);
 	vkUnmapMemory(vulkanDevice.logicalDevice, stagingBuffer.bufferMemory);
 
 	VkBufferUsageFlags indexBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;

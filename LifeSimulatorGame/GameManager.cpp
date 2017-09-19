@@ -16,6 +16,7 @@
 #include "FPSTextOverlay.h"
 #include "TerrainManager.h"
 #include "TerrainDisplayManager.h"
+#include "TerrainVisibleArea.h"
 
 FGameManager::FGameManager()
 {
@@ -28,7 +29,7 @@ FGameManager::FGameManager()
 	terrain = new FTerrain();
 	screenGrab = new FVulkanScreenGrab();
 	applicationData = new FVulkanApplicationData();
-	//textOverlay = new FTextOverlay();
+	terrainVisibleArea = new FTerrainVisibleArea();
 	fpsTextOverlay = new FFPSTextOverlay();
 	terrainDisplayMesh = new FTerrainDisplayMesh();
 	terrainManager = new FTerrainManager();
@@ -36,6 +37,7 @@ FGameManager::FGameManager()
 
 	terrainManager->Initialize(this);
 	terrainDisplayManager->Initialize(this);
+	terrainDisplayManager->SetupTerrainVisibleArea();
 	terrainDisplayManager->SetupDisplayMesh();
 
 	screenGrab->Initialize(this);

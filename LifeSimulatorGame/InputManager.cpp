@@ -34,8 +34,8 @@ void FInputManager::ProcessMouseInput()
 	deltaXMousePos = (float)(currentXMousePos - xMousePosition);
 	deltaYMousePos = (float)(currentYMousePos - yMousePosition);
 
-	currentXMousePos = xMousePosition;
-	currentYMousePos = yMousePosition;
+	currentXMousePos = (float) xMousePosition;
+	currentYMousePos = (float) yMousePosition;
 
 
 	for (auto item : mouseStates)

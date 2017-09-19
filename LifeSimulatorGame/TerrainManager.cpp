@@ -24,7 +24,7 @@ void FTerrainManager::LoadAssets()
 	{
 		for (int y = 0; y < numberOfVertices; y++)
 		{
-			float height = noiseAmplitude * Noise.noise(x * noiseFrequency, y * noiseFrequency);
+			float height = (float) (noiseAmplitude * Noise.noise(x * noiseFrequency, y * noiseFrequency));
 
 			FTerrainVertex Vertex;
 			//Vertex.pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };

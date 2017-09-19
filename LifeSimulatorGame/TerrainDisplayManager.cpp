@@ -4,11 +4,37 @@
 #include "TerrainCalculator.h"
 #include "Terrain.h"
 #include "TerrainDisplayMesh.h"
+#include "TerrainVisibleArea.h"
+#include "GeometryCalculator.h"
 
 void FTerrainDisplayManager::Initialize(FGameManager* gameManager)
 {
 	mesh = gameManager->terrainDisplayMesh;
 	terrain = gameManager->terrain;
+	terrainVisibleArea = gameManager->terrainVisibleArea;
+}
+
+void FTerrainDisplayManager::SetupTerrainVisibleArea()
+{
+	terrainVisibleArea->vertexLocations.resize(3);
+	terrainVisibleArea->vertexLocations[0] = { -0.5f - numberOfQuads / 2, -0.5f - numberOfQuads / 2 };
+	terrainVisibleArea->vertexLocations[1] = { -0.5f - numberOfQuads / 2, 0.5f - numberOfQuads / 2 };
+	terrainVisibleArea->vertexLocations[2] = { 0.5f - numberOfQuads / 2, -0.5f - numberOfQuads / 2 };
+
+	terrainVisibleArea->vertices.edgeIndices.resize(3);
+	terrainVisibleArea->vertices.triangleIndices.resize(3);
+
+	terrainVisibleArea->edges.vertexIndices.resize(3);
+	terrainVisibleArea->edges.triangleIndices.resize(3);
+
+	terrainVisibleArea->triangles.vertexIndices.resize(1);
+	terrainVisibleArea->triangles.edgeIndices.resize(1);
+
+	FGeometryCalculator::LinkVerticesAndEdge(0, 1, 0, terrainVisibleArea->vertices, terrainVisibleArea->edges);
+	FGeometryCalculator::LinkVerticesAndEdge(1, 2, 1, terrainVisibleArea->vertices, terrainVisibleArea->edges);
+	FGeometryCalculator::LinkVerticesAndEdge(2, 0, 2, terrainVisibleArea->vertices, terrainVisibleArea->edges);
+	FGeometryCalculator::LinkVerticesAndTriangle(0, 1, 2, 0, terrainVisibleArea->vertices, terrainVisibleArea->triangles);
+	FGeometryCalculator::LinkEdgesAndTriangle(0, 1, 2, 0, terrainVisibleArea->edges, terrainVisibleArea->triangles);
 }
 
 void FTerrainDisplayManager::SetupDisplayMesh()
@@ -18,15 +44,15 @@ void FTerrainDisplayManager::SetupDisplayMesh()
 
 	int vertexCount = numberOfVertices * numberOfVertices;
 	//mesh->vertices.edgeIndices.resize(vertexCount);
-	mesh->vertices.triangleIndices = new std::vector<int>[vertexCount];
+	mesh->vertices.triangleIndices.resize(vertexCount);
 	mesh->attachedVertices.vertexIndices = new int[vertexCount][3];
 	mesh->attachedVertices.vertexWeights = new float[vertexCount][3];
 	mesh->terrainVertices.resize(vertexCount);
 
 	int triangleCount = 2 * numberOfQuads * numberOfQuads;
+	mesh->triangles.vertexIndices.resize(triangleCount);
 	//mesh->triangles.edgeIndices.resize(triangleCount);
-	mesh->triangles.vertexIndicesCount = triangleCount * 3;
-	mesh->triangles.vertexIndices = new int[triangleCount][3];
+	//mesh->triangles.vertexIndicesCount = triangleCount * 3;
 
 	//int edgeCount = triangleCount * 3;
 	//mesh->edges.triangleIndex.resize(edgeCount);
@@ -44,8 +70,8 @@ void FTerrainDisplayManager::SetupDisplayMesh()
 			int bottomRightVertexIndex = GetVertexIndex(x + 1, y);
 			int topRightVertexIndex = GetVertexIndex(x + 1, y + 1);
 
-			LinkTriangleAndVertex(bottomLeftTriangleIndex, bottomLeftVertexIndex, bottomRightVertexIndex, topLeftVertexIndex);
-			LinkTriangleAndVertex(topRightTriangleIndex, topRightVertexIndex, topLeftVertexIndex, bottomRightVertexIndex);
+			FGeometryCalculator::LinkVerticesAndTriangle(bottomLeftVertexIndex, bottomRightVertexIndex, topLeftVertexIndex, bottomLeftTriangleIndex, mesh->vertices, mesh->triangles);
+			FGeometryCalculator::LinkVerticesAndTriangle(topRightVertexIndex, topLeftVertexIndex, bottomRightVertexIndex, topRightTriangleIndex, mesh->vertices, mesh->triangles);
 		}
 	}
 
@@ -92,3 +118,4 @@ void FTerrainDisplayManager::LinkTriangleAndVertex(int triangleIndex, int vertex
 	mesh->triangles.vertexIndices[triangleIndex][1] = vertexIndex2;
 	mesh->triangles.vertexIndices[triangleIndex][2] = vertexIndex3;
 }
+

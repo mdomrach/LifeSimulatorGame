@@ -16,18 +16,22 @@ class FFPSTextOverlay;
 struct FTerrainDisplayMesh;
 class FTerrainManager;
 class FTerrainDisplayManager;
+struct FTerrainVisibleArea;
 
 class FGameManager
 {
 public:
 	FScene* scene;
+	FTerrain* terrain;
+	FTerrainDisplayMesh* terrainDisplayMesh;
+	FTerrainVisibleArea* terrainVisibleArea;
+
+
 	FInputManager* inputManager;
 	FVulkanApplication* vulkanApplication;
 	FTimeManager* timeManager;
 	FCameraController* cameraController;
 	FTerrainEditor* terrainEditor;
-	FTerrain* terrain;
-	FTerrainDisplayMesh* terrainDisplayMesh;
 	FVulkanScreenGrab* screenGrab;
 	FVulkanApplicationData* applicationData;
 	FTerrainManager* terrainManager;

@@ -1,9 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <array>
+
+using namespace std;
 
 struct FEdges
 {
-	int (*vertexIndices)[2];
-	int (*triangleIndex);
+	vector<array<int, 2>> vertexIndices;
+	vector<int> triangleIndices;
 };

@@ -73,7 +73,7 @@ void FVulkanScreenGrab::OutputCurrentMousePosDepth(FVulkanSwapChain swapChain)
 	depths += subResourceLayout.offset;
 
 	auto elementSize = sizeof(float);
-	uint32_t offsetToCurrentMousePos = currentYMousePos * subResourceLayout.rowPitch + currentXMousePos * elementSize;
+	uint32_t offsetToCurrentMousePos = (uint32_t) (currentYMousePos * subResourceLayout.rowPitch + currentXMousePos * elementSize);
 	depths += offsetToCurrentMousePos;
 	float *currentDepth = (float*)depths;
 	auto temp = *currentDepth;

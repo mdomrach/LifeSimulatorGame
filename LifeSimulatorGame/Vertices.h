@@ -1,9 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <list>
+
+using namespace std;
 
 struct FVertices
 {
-	std::vector<int> (*triangleIndices);
-	std::vector<int> (*edgeIndices);
+	vector<vector<int>> triangleIndices;
+	vector<vector<int>> edgeIndices;
 };

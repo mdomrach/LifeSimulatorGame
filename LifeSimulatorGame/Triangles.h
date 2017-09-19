@@ -1,10 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <array>
+
+using namespace std;
 
 struct FTriangles
 {
-	int vertexIndicesCount;
-	int (*vertexIndices)[3];
-	int (*edgeIndices)[3];
+	vector<array<int, 3>> vertexIndices;
+	vector<array<int, 3>> edgeIndices;
 };

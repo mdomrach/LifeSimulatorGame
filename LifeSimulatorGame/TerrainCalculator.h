@@ -8,5 +8,7 @@ public:
 
 	static int GetVertexIndex(int xGrid, int yGrid);
 	static int GetTriangleIndex(int xGrid, int yGrid);
+
+	//static void CalculateTerrainDisplayMesh(const FVisibleTerainAreas& visibleTerrainAreas, const FTerrain& terrain, FTerrainDisplayMesh& terrainDisplayMesh);
 };
 
