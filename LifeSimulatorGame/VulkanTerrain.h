@@ -4,7 +4,7 @@
 #include <string>
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
-#include "TerrainVertex.h"
+#include "MeshVertex.h"
 #include <vector>
 
 class FVulkanDevice;

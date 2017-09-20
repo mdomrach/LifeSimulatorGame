@@ -19,7 +19,7 @@
 //#include "VulkanBuffer.h"
 //#include "TextOverlay.h"
 #include "VulkanTextOverlay.h"
-#include "TerrainVertex.h"
+#include "MeshVertex.h"
 
 class FVulkanApplication;
 class FVulkanDevice;
@@ -64,7 +64,7 @@ private:
 
 	// Pointer to mapped vertex buffer
 	//glm::vec4 *mapped = nullptr;
-	struct FTerrainVertex* mapped = nullptr;
+	struct FMeshVertex* mapped = nullptr;
 
 	uint32_t numLetters;
 	stb_fontchar stbFontData[STB_NUM_CHARS];

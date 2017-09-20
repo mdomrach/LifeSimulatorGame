@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <array>
 
-struct FTerrainVertex
+struct FMeshVertex
 {
 	glm::vec3 pos;
 	glm::vec3 normal;

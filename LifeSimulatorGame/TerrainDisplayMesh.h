@@ -4,13 +4,10 @@
 #include "Vertices.h"
 #include "Edges.h"
 #include "AttachedVertices.h"
-#include "TerrainVertex.h"
+#include "MeshVertex.h"
 
 struct FTerrainDisplayMesh
 {
-	FTriangles triangles;
-	FVertices vertices;
-	FEdges edges;
+	FMesh mesh;
 	FAttachedVertices attachedVertices;
-	std::vector<FTerrainVertex> terrainVertices;
 };

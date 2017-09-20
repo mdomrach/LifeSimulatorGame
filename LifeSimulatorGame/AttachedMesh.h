@@ -2,8 +2,8 @@
 
 #include <vector>
 #include "AttachedVertex.h"
-#include "TerrainVertex.h"
-#include "Terrain.h"
+#include "MeshVertex.h"
+#include "Mesh.h"
 
 struct FDisplayedTerrain
 {
@@ -11,6 +11,6 @@ struct FDisplayedTerrain
 	std::vector<FAttachedVertex<2>> edgeAttached;
 	std::vector<FAttachedVertex<3>> faceAttached;
 	
-	FTerrain Mesh;
+	FMesh Mesh;
 };
 

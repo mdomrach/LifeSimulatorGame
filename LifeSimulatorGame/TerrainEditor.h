@@ -1,7 +1,7 @@
 #pragma once
 
 class FInputManager;
-class FTerrain;
+class FMesh;
 class FGameManager;
 class FTimeManager;
 class FScene;
@@ -10,7 +10,7 @@ class FTerrainDisplayManager;
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
-#include "TerrainVertex.h"
+#include "MeshVertex.h"
 
 class FTerrainEditor
 {
@@ -19,7 +19,7 @@ private:
 
 	FScene* scene;
 	FInputManager* inputManager;
-	FTerrain* terrain;
+	FMesh* terrain;
 	FTerrainDisplayManager* terrainDisplayManager;
 	FTimeManager* timeManager;
 	FTerrainManager* terrainManager;

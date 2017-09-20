@@ -26,7 +26,7 @@
 #include "InputManager.h"
 #include "GameManager.h"
 #include "TimeManager.h"
-#include "Terrain.h"
+#include "Mesh.h"
 #include "VulkanDevice.h"
 #include "VulkanTextOverlay.h"
 #include <iosfwd>

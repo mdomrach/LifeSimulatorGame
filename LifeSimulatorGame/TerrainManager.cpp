@@ -3,8 +3,8 @@
 #include "GameManager.h"
 #include <glm/glm.hpp>
 #include "PerlinNoise.h"
-#include "Terrain.h"
-#include "TerrainVertex.h"
+#include "Mesh.h"
+#include "MeshVertex.h"
 #include "TerrainCalculator.h"
 
 void FTerrainManager::Initialize(FGameManager* gameManager)
@@ -26,7 +26,7 @@ void FTerrainManager::LoadAssets()
 		{
 			float height = (float) (noiseAmplitude * Noise.noise(x * noiseFrequency, y * noiseFrequency));
 
-			FTerrainVertex Vertex;
+			FMeshVertex Vertex;
 			//Vertex.pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };
 			Vertex.pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, 0 };
 			Vertex.normal = glm::vec3(0, 0, 1);

@@ -14,7 +14,7 @@
 #include "TextOverlay.h"
 #include "UniformBufferObject.h"
 #include "VulkanBufferCalculator.h"
-#include "TerrainVertex.h"
+#include "MeshVertex.h"
 
 #include "Scene.h"
 #include "Camera.h"
@@ -501,8 +501,8 @@ void FVulkanCursor3D::CreateGraphicsPipeline()
 	multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 	multisampleState.flags = 0;
 
-	auto vertexBindingDescription = FTerrainVertex::GetVertexBindingDescription();
-	auto vertexAttributeDescriptions = FTerrainVertex::GetVertexAttributeDescriptions();
+	auto vertexBindingDescription = FMeshVertex::GetVertexBindingDescription();
+	auto vertexAttributeDescriptions = FMeshVertex::GetVertexAttributeDescriptions();
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = FVulkanInitializers::PipelineVertexInputStateCreateInfo();
 	vertexInputInfo.vertexBindingDescriptionCount = 1;

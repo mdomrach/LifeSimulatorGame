@@ -4,7 +4,7 @@
 #include "TimeManager.h"
 #include "InputManager.h"
 #include "VulkanApplication.h"
-#include "Terrain.h"
+#include "Mesh.h"
 #include "Scene.h"
 #include "TerrainDisplayManager.h"
 #include "TerrainManager.h"

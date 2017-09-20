@@ -6,8 +6,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 #include <unordered_map>
-#include "TerrainVertex.h"
-#include "Terrain.h"
+#include "MeshVertex.h"
+#include "Mesh.h"
 
 void FSceneCalculator::LoadScene(FScene* scene, int width, int height)
 {

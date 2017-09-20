@@ -8,7 +8,7 @@ class FVulkanApplication;
 class FTimeManager;
 class FCameraController;
 class FTerrainEditor;
-class FTerrain;
+class FMesh;
 class FVulkanScreenGrab;
 class FVulkanApplicationData;
 class FTextOverlay;
@@ -22,7 +22,7 @@ class FGameManager
 {
 public:
 	FScene* scene;
-	FTerrain* terrain;
+	FMesh* terrain;
 	FTerrainDisplayMesh* terrainDisplayMesh;
 	FTerrainVisibleArea* terrainVisibleArea;
 

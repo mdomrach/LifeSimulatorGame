@@ -8,7 +8,7 @@
 #include "VulkanDevice.h"
 #include "CameraController.h"
 #include "TerrainEditor.h"
-#include "Terrain.h"
+#include "Mesh.h"
 #include "TerrainDisplayMesh.h"
 #include "VulkanScreenGrab.h"
 #include "VulkanApplicationData.h"
@@ -26,7 +26,7 @@ FGameManager::FGameManager()
 	timeManager = new FTimeManager();
 	cameraController = new FCameraController();
 	terrainEditor = new FTerrainEditor();
-	terrain = new FTerrain();
+	terrain = new FMesh();
 	screenGrab = new FVulkanScreenGrab();
 	applicationData = new FVulkanApplicationData();
 	terrainVisibleArea = new FTerrainVisibleArea();

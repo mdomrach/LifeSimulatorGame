@@ -1,11 +1,11 @@
 #pragma once
 #include <vector>
 
-struct FTerrainVertex;
+struct FMeshVertex;
 
-class FTerrain
+class FMesh
 {
 public:
-	std::vector<FTerrainVertex> vertices;
+	std::vector<FMeshVertex> vertices;
 	std::vector<uint32_t> indices;
 };

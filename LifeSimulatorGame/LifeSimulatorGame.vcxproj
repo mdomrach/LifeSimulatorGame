@@ -139,7 +139,7 @@
     <ClCompile Include="Particle.cpp" />
     <ClCompile Include="ShaderCalculator.cpp" />
     <ClCompile Include="TerrainEditor.cpp" />
-    <ClCompile Include="TerrainVertex.cpp" />
+    <ClCompile Include="MeshVertex.cpp" />
     <ClCompile Include="VulkanImageCalculator.cpp" />
     <ClCompile Include="VulkanCommandBufferCalculator.cpp" />
     <ClCompile Include="ParticleFire.cpp" />
@@ -223,7 +223,7 @@
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="ShaderCalculator.h" />
     <ClInclude Include="TerrainEditor.h" />
-    <ClInclude Include="TerrainVertex.h" />
+    <ClInclude Include="MeshVertex.h" />
     <ClInclude Include="UniformBufferObjectParticle.h" />
     <ClInclude Include="VulkanImageCalculator.h" />
     <ClInclude Include="VulkanCommandBufferCalculator.h" />

@@ -15,7 +15,7 @@
 #include "Camera.h"
 #include "Mesh.h"
 #include "VulkanTextureCreateInfo.h"
-#include "TerrainVertex.h"
+#include "MeshVertex.h"
 #include "GameManager.h"
 
 void FEnvironment::Initialize(FGameManager* gameManager)
@@ -92,8 +92,8 @@ void FEnvironment::PreparePipeline(VkDevice logicalDevice, VkGraphicsPipelineCre
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 	shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
-	auto vertexBindingDescription = FTerrainVertex::GetVertexBindingDescription();
-	auto vertexAttributeDescriptions = FTerrainVertex::GetVertexAttributeDescriptions();
+	auto vertexBindingDescription = FMeshVertex::GetVertexBindingDescription();
+	auto vertexAttributeDescriptions = FMeshVertex::GetVertexAttributeDescriptions();
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = FVulkanInitializers::PipelineVertexInputStateCreateInfo();
 	vertexInputInfo.vertexBindingDescriptionCount = 1;

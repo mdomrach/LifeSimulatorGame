@@ -2,14 +2,14 @@
 
 #include "GameManager.h"
 #include "TerrainCalculator.h"
-#include "Terrain.h"
+#include "Mesh.h"
 #include "TerrainDisplayMesh.h"
 #include "TerrainVisibleArea.h"
 #include "GeometryCalculator.h"
 
 void FTerrainDisplayManager::Initialize(FGameManager* gameManager)
 {
-	mesh = gameManager->terrainDisplayMesh;
+	terrainDisplayMesh = gameManager->terrainDisplayMesh;
 	terrain = gameManager->terrain;
 	terrainVisibleArea = gameManager->terrainVisibleArea;
 }
@@ -44,13 +44,12 @@ void FTerrainDisplayManager::SetupDisplayMesh()
 
 	int vertexCount = numberOfVertices * numberOfVertices;
 	//mesh->vertices.edgeIndices.resize(vertexCount);
-	mesh->vertices.triangleIndices.resize(vertexCount);
-	mesh->attachedVertices.vertexIndices = new int[vertexCount][3];
-	mesh->attachedVertices.vertexWeights = new float[vertexCount][3];
-	mesh->terrainVertices.resize(vertexCount);
+	terrainDisplayMesh->attachedVertices.vertexIndices = new int[vertexCount][3];
+	terrainDisplayMesh->attachedVertices.vertexWeights = new float[vertexCount][3];
+	terrainDisplayMesh->mesh.vertices.resize(vertexCount);
 
 	int triangleCount = 2 * numberOfQuads * numberOfQuads;
-	mesh->triangles.vertexIndices.resize(triangleCount);
+	terrainDisplayMesh->mesh.vertices.resize(triangleCount);
 	//mesh->triangles.edgeIndices.resize(triangleCount);
 	//mesh->triangles.vertexIndicesCount = triangleCount * 3;
 
@@ -69,9 +68,6 @@ void FTerrainDisplayManager::SetupDisplayMesh()
 			int topLeftVertexIndex = GetVertexIndex(x, y + 1);
 			int bottomRightVertexIndex = GetVertexIndex(x + 1, y);
 			int topRightVertexIndex = GetVertexIndex(x + 1, y + 1);
-
-			FGeometryCalculator::LinkVerticesAndTriangle(bottomLeftVertexIndex, bottomRightVertexIndex, topLeftVertexIndex, bottomLeftTriangleIndex, mesh->vertices, mesh->triangles);
-			FGeometryCalculator::LinkVerticesAndTriangle(topRightVertexIndex, topLeftVertexIndex, bottomRightVertexIndex, topRightTriangleIndex, mesh->vertices, mesh->triangles);
 		}
 	}
 
@@ -81,11 +77,11 @@ void FTerrainDisplayManager::SetupDisplayMesh()
 		{
 			int vertexIndex = GetVertexIndex(x, y);
 
-			mesh->attachedVertices.vertexIndices[vertexIndex][0] =  FTerrainCalculator::GetVertexIndex(x, y);
+			terrainDisplayMesh->attachedVertices.vertexIndices[vertexIndex][0] = FTerrainCalculator::GetVertexIndex(x, y);
 
-			mesh->attachedVertices.vertexWeights[vertexIndex][0] = 1;
-			mesh->attachedVertices.vertexWeights[vertexIndex][1] = 0;
-			mesh->attachedVertices.vertexWeights[vertexIndex][2] = 0;
+			terrainDisplayMesh->attachedVertices.vertexWeights[vertexIndex][0] = 1;
+			terrainDisplayMesh->attachedVertices.vertexWeights[vertexIndex][1] = 0;
+			terrainDisplayMesh->attachedVertices.vertexWeights[vertexIndex][2] = 0;
 		}
 	}
 
@@ -94,12 +90,11 @@ void FTerrainDisplayManager::SetupDisplayMesh()
 
 void FTerrainDisplayManager::UpdateTerrainDisplayFromTerrain()
 {
-	for (int i = 0; i < mesh->terrainVertices.size(); i++)
+	for (int i = 0; i < terrainDisplayMesh->mesh.vertices.size(); i++)
 	{
-		int attachedVertexIndex = mesh->attachedVertices.vertexIndices[i][0];
-
-		mesh->terrainVertices[i].pos = terrain->vertices[attachedVertexIndex].pos;
-		mesh->terrainVertices[i].normal = terrain->vertices[attachedVertexIndex].normal;
+		int attachedVertexIndex = terrainDisplayMesh->attachedVertices.vertexIndices[i][0];
+		terrainDisplayMesh->mesh.vertices[i].pos = terrainDisplayMesh->mesh.vertices[attachedVertexIndex].pos;
+		terrainDisplayMesh->mesh.vertices[i].normal = terrainDisplayMesh->mesh.vertices[attachedVertexIndex].normal;
 	}
 }
 
@@ -114,8 +109,8 @@ void FTerrainDisplayManager::LinkTriangleAndVertex(int triangleIndex, int vertex
 	//mesh->vertices.triangleIndices[vertexIndex2].push_back(triangleIndex);
 	//mesh->vertices.triangleIndices[vertexIndex3].push_back(triangleIndex);
 
-	mesh->triangles.vertexIndices[triangleIndex][0] = vertexIndex1;
-	mesh->triangles.vertexIndices[triangleIndex][1] = vertexIndex2;
-	mesh->triangles.vertexIndices[triangleIndex][2] = vertexIndex3;
+	terrainDisplayMesh->mesh.indices[3 * triangleIndex + 0] = vertexIndex1;
+	terrainDisplayMesh->mesh.indices[3 * triangleIndex + 1] = vertexIndex2;
+	terrainDisplayMesh->mesh.indices[3 * triangleIndex + 2] = vertexIndex3;
 }
 

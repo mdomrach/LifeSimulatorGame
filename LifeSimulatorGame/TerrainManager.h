@@ -1,7 +1,7 @@
 #pragma once
 
 class FGameManager;
-class FTerrain;
+class FMesh;
 
 class FTerrainManager
 {
@@ -14,6 +14,6 @@ private:
 
 	const int numberOfQuads = 16;
 	const int numberOfVertices = 17;
-	FTerrain* terrain;
+	FMesh* terrain;
 	int GetVertexIndex(int x, int y);
 };

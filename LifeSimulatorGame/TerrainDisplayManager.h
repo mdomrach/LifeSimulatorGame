@@ -2,7 +2,7 @@
 
 class FGameManager;
 struct FTerrainDisplayMesh;
-class FTerrain;
+class FMesh;
 struct FTerrainVisibleArea;
 
 class FTerrainDisplayManager
@@ -20,7 +20,7 @@ private:
 	const int numberOfQuads = 16;
 	const int numberOfVertices = 17;
 
-	FTerrainDisplayMesh* mesh;
-	FTerrain* terrain;
+	FTerrainDisplayMesh* terrainDisplayMesh;
+	FMesh* terrain;
 	FTerrainVisibleArea* terrainVisibleArea;
 };
