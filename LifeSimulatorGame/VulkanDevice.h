@@ -10,7 +10,7 @@ class FVulkanDevice
 public:
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkDevice logicalDevice = VK_NULL_HANDLE;
-	//VkPhysicalDeviceProperties properties;
+	VkPhysicalDeviceProperties properties;
 	//VkPhysicalDeviceFeatures features;
 	//VkPhysicalDeviceFeatures enabledFeatures;
 	VkPhysicalDeviceMemoryProperties memoryProperties;

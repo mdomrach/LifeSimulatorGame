@@ -41,7 +41,8 @@ void FEnvironment::Initialize(FGameManager* gameManager)
 		2, 6, 3, 3, 6, 7,
 	};
 
-	gameManager->scene->mesh = mesh;
+	gameManager->scene->cursor3DIndex = gameManager->scene->displayedMeshes.size();
+	gameManager->scene->displayedMeshes.push_back(mesh);
 }
 
 void FEnvironment::Destroy(FVulkanDevice vulkanDevice)
@@ -174,7 +175,7 @@ void FEnvironment::UpdateUniformBuffer(VkDevice logicalDevice, FScene* scene)
 	//float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
 
 	FUniformBufferObject uniformBufferObject = {};
-	uniformBufferObject.model = glm::translate(glm::mat4(), scene->position);
+	uniformBufferObject.model = glm::translate(glm::mat4(), scene->cursor3Dposition);
 	uniformBufferObject.model = glm::mat4();
 
 	
@@ -212,7 +213,7 @@ void FEnvironment::CreateBuffers(FScene* scene, FVulkanDevice vulkanDevice, VkCo
 
 void FEnvironment::CreateVertexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	FMesh* mesh = scene->mesh;
+	FMesh* mesh = scene->displayedMeshes[scene->cursor3DIndex];
 	VkDeviceSize bufferSize = sizeof(mesh->vertices[0]) * mesh->vertices.size();
 
 	VkBuffer stagingBuffer;
@@ -238,7 +239,7 @@ void FEnvironment::CreateVertexBuffer(FScene* scene, FVulkanDevice vulkanDevice,
 
 void FEnvironment::CreateIndexBuffer(FScene* scene, FVulkanDevice vulkanDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
 {
-	FMesh* mesh = scene->mesh;
+	FMesh* mesh = scene->displayedMeshes[scene->cursor3DIndex];
 	VkDeviceSize bufferSize = sizeof(mesh->indices[0]) * mesh->indices.size();
 
 	VkBuffer stagingBuffer;

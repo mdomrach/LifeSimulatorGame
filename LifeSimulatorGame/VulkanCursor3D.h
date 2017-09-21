@@ -1,23 +1,5 @@
 #pragma once
 
-//#include <vulkan/vulkan.h>
-//#include <string>
-//#include "VulkanBuffer.h"
-//#include "VulkanTexture.h"
-//#include <vector>
-//
-//class FVulkanDevice;
-//class FGameManager;
-//class FScene;
-//class FVulkanApplication;
-//class FVulkanApplicationData;
-
-//#include <vulkan/vulkan.h>
-//#include "Fonts/stb_font_consolas_24_latin1.inl"
-//#include <vector>
-//#include <glm/glm.hpp>
-//#include "VulkanBuffer.h"
-//#include "TextOverlay.h"
 #include "VulkanTextOverlay.h"
 #include "MeshVertex.h"
 
@@ -40,10 +22,11 @@ public:
 	void UpdateFrame();
 
 	std::vector<VkCommandBuffer> commandBuffers;
-
+	
+	size_t dynamicAlignment;
 	FVulkanBuffer uniformBuffer;
-	FVulkanBuffer vertexBuffer;
-	FVulkanBuffer indexBuffer;
+	std::vector<FVulkanBuffer> vertexBuffers;
+	std::vector<FVulkanBuffer> indexBuffers;
 	VkPipeline graphicsPipeline;
 
 private:
@@ -60,10 +43,7 @@ private:
 	VkCommandPool commandPool;
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
-
-
 	// Pointer to mapped vertex buffer
-	//glm::vec4 *mapped = nullptr;
 	struct FMeshVertex* mapped = nullptr;
 
 	uint32_t numLetters;
@@ -73,8 +53,8 @@ private:
 	void CreateCommandBuffer();
 	void UpdateCommandBuffers();
 	void CreateUniformBuffer();
-	void CreateVertexBuffer();
-	void CreateIndexBuffer();
+	void CreateVertexBuffers();
+	void CreateIndexBuffers();
 	void CreateFontTexture();
 	void CreateDescriptorPool();
 	void CreateDescriptorSetLayout();

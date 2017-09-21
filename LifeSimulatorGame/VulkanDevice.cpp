@@ -70,13 +70,14 @@ bool FVulkanDeviceCreateInfo::TryFindVulkanGPUs(VkInstance* instance, std::vecto
 bool FVulkanDeviceCreateInfo::PickPhysicalDevice(VkInstance* instance, const std::vector<VkPhysicalDevice>& devices, FVulkanDevice* vulkanDevice)
 {
 	int bestDeviceSuitability = 0;
-	for (const auto& Device : devices)
+	for (const auto& device : devices)
 	{
-		int deviceSuitability = RateDeviceSuitability(Device);
+		int deviceSuitability = RateDeviceSuitability(device);
 		if (vulkanDevice->physicalDevice == VK_NULL_HANDLE || deviceSuitability > bestDeviceSuitability)
 		{
-			vulkanDevice->physicalDevice = Device;
+			vulkanDevice->physicalDevice = device;
 			vkGetPhysicalDeviceMemoryProperties(vulkanDevice->physicalDevice, &vulkanDevice->memoryProperties);
+			vkGetPhysicalDeviceProperties(vulkanDevice->physicalDevice, &vulkanDevice->properties);
 			bestDeviceSuitability = deviceSuitability;
 		}
 	}

@@ -1,4 +1,4 @@
-#include "Cursor3D.h"
+#include "VulkanCursor3D.h"
 #include "VulkanDevice.h"
 #include "VulkanApplication.h"
 #include <vector>
@@ -58,10 +58,10 @@ void FVulkanCursor3D::UpdateSwapChain()
 
 	CreateCommandPool();
 	CreateCommandBuffer();
-	CreateVertexBuffer();
+	CreateVertexBuffers();
 	CreateFontTexture();
 	CreateUniformBuffer();
-	CreateIndexBuffer();
+	CreateIndexBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSetLayout();
 	CreatePipelineLayout();
@@ -80,9 +80,16 @@ void FVulkanCursor3D::Destroy()
 {
 	auto logicalDevice = applicationData->vulkanDevice.logicalDevice;
 
+	for (auto vertexBuffer : vertexBuffers)
+	{
+		vertexBuffer.Destroy(logicalDevice);
+	}
+	for (auto indexBuffer : indexBuffers)
+	{
+		indexBuffer.Destroy(logicalDevice);
+	}
 	uniformBuffer.Destroy(logicalDevice);
-	vertexBuffer.Destroy(logicalDevice);
-	indexBuffer.Destroy(logicalDevice);
+
 	vkDestroyDescriptorSetLayout(logicalDevice, descriptorSetLayout, nullptr);
 	vkDestroyDescriptorPool(logicalDevice, descriptorPool, nullptr);
 	vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
@@ -94,31 +101,36 @@ void FVulkanCursor3D::Destroy()
 
 void FVulkanCursor3D::UpdateFrame()
 {
-	//static auto startTime = std::chrono::high_resolution_clock::now();
+	VkDeviceSize dataSize = dynamicAlignment * scene->displayedMeshes.size();
 
-	//auto currentTime = std::chrono::high_resolution_clock::now();
-	//float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
+	FUniformBufferObject* uniformBufferObjects = (FUniformBufferObject*) malloc(dataSize);
+	char* currentUniformBufferObjectPointer = (char*) uniformBufferObjects;
 
-	FUniformBufferObject uniformBufferObject = {};
-	//uniformBufferObject.model = glm::translate(glm::mat4(), scene->position);
-	//uniformBufferObject.model = glm::mat4();
-	uniformBufferObject.model = glm::translate(glm::mat4(), scene->position);
+	for (int i = 0; i < scene->displayedMeshes.size(); i++)
+	{
+		FUniformBufferObject* currentUniformBufferObject = (FUniformBufferObject*)currentUniformBufferObjectPointer;
+		if (i == scene->cursor3DIndex)
+		{
+			currentUniformBufferObject->model = glm::translate(glm::mat4(), scene->cursor3Dposition);
+		}
+		else
+		{
+			currentUniformBufferObject->model = {};
+		}
 
+		currentUniformBufferObject->view = scene->camera->view;
+		currentUniformBufferObject->proj = scene->camera->proj;
+		currentUniformBufferObject->proj[1][1] *= -1;
 
-	//uniformBufferObject.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	//uniformBufferObject.model = glm::rotate(glm::mat4(), startFrameTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	//uniformBufferObject.model = glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-	uniformBufferObject.view = scene->camera->view;
-	uniformBufferObject.proj = scene->camera->proj;
-	uniformBufferObject.proj[1][1] *= -1;
-	//uniformBufferObject.view = glm::mat4();
-	//uniformBufferObject.proj = glm::mat4();
+		currentUniformBufferObjectPointer += dynamicAlignment;
+	}
 
 	void* data;
-	vkMapMemory(applicationData->vulkanDevice.logicalDevice, uniformBuffer.bufferMemory, 0, sizeof(uniformBufferObject), 0, &data);
-	memcpy(data, &uniformBufferObject, sizeof(uniformBufferObject));
+	vkMapMemory(applicationData->vulkanDevice.logicalDevice, uniformBuffer.bufferMemory, 0, dataSize, 0, &data);
+	memcpy(data, uniformBufferObjects, dataSize);
 	vkUnmapMemory(applicationData->vulkanDevice.logicalDevice, uniformBuffer.bufferMemory);
+
+	free(uniformBufferObjects);
 }
 
 void FVulkanCursor3D::CreateCommandPool()
@@ -149,73 +161,81 @@ void FVulkanCursor3D::CreateCommandBuffer()
 
 void FVulkanCursor3D::CreateUniformBuffer()
 {
-	VkDeviceSize bufferSize = sizeof(FUniformBufferObject);
-	VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, uniformBuffer.buffer, uniformBuffer.bufferMemory);
+	//uniformBuffers.resize(scene->displayedMeshes.size());
+	//for (int i = 0; i < scene->displayedMeshes.size(); i++)
+	//{
+	//size_t bufferSize = scene->displayedMeshes.size()  * dynamicAlignment;
+	//uboDataDynamic.model = (glm::mat4*)alignedAlloc(bufferSize, dynamicAlignment);
+	size_t uboAlignment = applicationData->vulkanDevice.properties.limits.minUniformBufferOffsetAlignment;
+	dynamicAlignment = (sizeof(FMeshVertex) / uboAlignment) * uboAlignment + ((sizeof(FMeshVertex) % uboAlignment) > 0 ? uboAlignment : 0);
+
+		VkDeviceSize bufferSize = scene->displayedMeshes.size() * dynamicAlignment;
+		VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, bufferUsageFlags, memoryPropertyFlags, uniformBuffer.buffer, uniformBuffer.bufferMemory);
+	//}
 }
 
-void FVulkanCursor3D::CreateVertexBuffer()
+void FVulkanCursor3D::CreateVertexBuffers()
 {
-	numLetters = 1;
-	VkDeviceSize bufferSize = sizeof(scene->mesh->vertices[0]) * scene->mesh->vertices.size();
+	vertexBuffers.resize(scene->displayedMeshes.size());
+	for (int i = 0; i < scene->displayedMeshes.size(); i++)
+	{
+		auto displayedMesh = scene->displayedMeshes[i];
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-	VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	VkMemoryPropertyFlags stagingMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, stagingBufferUsageFlags, stagingMemoryPropertyFlags, stagingBuffer, stagingBufferMemory);
+		numLetters = 1;
+		VkDeviceSize bufferSize = sizeof(displayedMesh->vertices[0]) * displayedMesh->vertices.size();
 
-	void* data;
-	vkMapMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, scene->mesh->vertices.data(), (size_t)bufferSize);
-	vkUnmapMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory);
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		VkMemoryPropertyFlags stagingMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, stagingBufferUsageFlags, stagingMemoryPropertyFlags, stagingBuffer, stagingBufferMemory);
 
-	VkBufferUsageFlags vertexBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	VkMemoryPropertyFlags vertexMemoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, vertexBufferUsageFlags, vertexMemoryPropertyFlags, vertexBuffer.buffer, vertexBuffer.bufferMemory);
+		void* data;
+		vkMapMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, displayedMesh->vertices.data(), (size_t)bufferSize);
+		vkUnmapMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory);
 
-	FVulkanBufferCalculator::CopyBuffer(applicationData->vulkanDevice.logicalDevice, commandPool, applicationData->graphicsQueue, stagingBuffer, vertexBuffer.buffer, bufferSize);
+		VkBufferUsageFlags vertexBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		VkMemoryPropertyFlags vertexMemoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, vertexBufferUsageFlags, vertexMemoryPropertyFlags, vertexBuffers[i].buffer, vertexBuffers[i].bufferMemory);
 
-	vkDestroyBuffer(applicationData->vulkanDevice.logicalDevice, stagingBuffer, nullptr);
-	vkFreeMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory, nullptr);
+		FVulkanBufferCalculator::CopyBuffer(applicationData->vulkanDevice.logicalDevice, commandPool, applicationData->graphicsQueue, stagingBuffer, vertexBuffers[i].buffer, bufferSize);
+
+		vkDestroyBuffer(applicationData->vulkanDevice.logicalDevice, stagingBuffer, nullptr);
+		vkFreeMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory, nullptr);
+	}
 }
-//void FVulkanCursor3D::CreateVertexBuffer()
-//{
-//	FBufferCreateInfo bufferInfo = {};
-//	bufferInfo.buffersize = TEXTOVERLAY_MAX_CHAR_COUNT * sizeof(glm::vec4);
-//	bufferInfo.bufferUsageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-//	bufferInfo.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-//
-//	if (bufferInfo.Create(applicationData->vulkanDevice, vertexBuffer) != VK_SUCCESS)
-//	{
-//		throw std::runtime_error("failed to create vulkan buffer!");
-//	}
-//}
 
-void FVulkanCursor3D::CreateIndexBuffer()
+void FVulkanCursor3D::CreateIndexBuffers()
 {
-	VkDeviceSize bufferSize = sizeof(scene->mesh->indices[0]) * scene->mesh->indices.size();
+	indexBuffers.resize(scene->displayedMeshes.size());
+	for (int i = 0; i < scene->displayedMeshes.size(); i++)
+	{
+		auto displayedMesh = scene->displayedMeshes[i];
+		VkDeviceSize bufferSize = sizeof(displayedMesh->indices[0]) * displayedMesh->indices.size();
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-	VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	VkMemoryPropertyFlags stagingMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, stagingBufferUsageFlags, stagingMemoryPropertyFlags, stagingBuffer, stagingBufferMemory);
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		VkBufferUsageFlags stagingBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		VkMemoryPropertyFlags stagingMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, stagingBufferUsageFlags, stagingMemoryPropertyFlags, stagingBuffer, stagingBufferMemory);
 
-	void* data;
-	vkMapMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, scene->mesh->indices.data(), (size_t)bufferSize);
-	vkUnmapMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory);
+		void* data;
+		vkMapMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, displayedMesh->indices.data(), (size_t)bufferSize);
+		vkUnmapMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory);
 
-	VkBufferUsageFlags indexBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	VkMemoryPropertyFlags indexMemoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, indexBufferUsageFlags, indexMemoryPropertyFlags, indexBuffer.buffer, indexBuffer.bufferMemory);
+		VkBufferUsageFlags indexBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		VkMemoryPropertyFlags indexMemoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		FVulkanBufferCalculator::CreateBuffer(applicationData->vulkanDevice, bufferSize, indexBufferUsageFlags, indexMemoryPropertyFlags, indexBuffers[i].buffer, indexBuffers[i].bufferMemory);
 
-	FVulkanBufferCalculator::CopyBuffer(applicationData->vulkanDevice.logicalDevice, commandPool, applicationData->graphicsQueue, stagingBuffer, indexBuffer.buffer, bufferSize);
+		FVulkanBufferCalculator::CopyBuffer(applicationData->vulkanDevice.logicalDevice, commandPool, applicationData->graphicsQueue, stagingBuffer, indexBuffers[i].buffer, bufferSize);
 
-	vkDestroyBuffer(applicationData->vulkanDevice.logicalDevice, stagingBuffer, nullptr);
-	vkFreeMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(applicationData->vulkanDevice.logicalDevice, stagingBuffer, nullptr);
+		vkFreeMemory(applicationData->vulkanDevice.logicalDevice, stagingBufferMemory, nullptr);
+	}
 }
 
 void FVulkanCursor3D::CreateFontTexture()
@@ -229,7 +249,8 @@ void FVulkanCursor3D::CreateDescriptorPool()
 {
 	std::array<VkDescriptorPoolSize, 1> poolSizes;
 	poolSizes[0] = {};
-	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 	poolSizes[0].descriptorCount = 1;
 
 	VkDescriptorPoolCreateInfo descriptorPoolInfo = FVulkanInitializers::DescriptorPoolCreateInfo();
@@ -247,7 +268,8 @@ void FVulkanCursor3D::CreateDescriptorSetLayout()
 {
 	VkDescriptorSetLayoutBinding uniformBufferObjectLayoutBinding = {};
 	uniformBufferObjectLayoutBinding.binding = 0;
-	uniformBufferObjectLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//uniformBufferObjectLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformBufferObjectLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 	uniformBufferObjectLayoutBinding.descriptorCount = 1;
 	uniformBufferObjectLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	uniformBufferObjectLayoutBinding.pImmutableSamplers = nullptr;
@@ -288,18 +310,20 @@ void FVulkanCursor3D::CreateDescriptorSet()
 	{
 		throw std::runtime_error("failed to allocate descriptor set!");
 	}
+	
+	std::array<VkWriteDescriptorSet, 1> descriptorWrites = {};
 
 	VkDescriptorBufferInfo bufferInfo = {};
-	bufferInfo.buffer = uniformBuffer.buffer;
 	bufferInfo.offset = 0;
 	bufferInfo.range = sizeof(FUniformBufferObject);
+	bufferInfo.buffer = uniformBuffer.buffer;
 
-	std::array<VkWriteDescriptorSet, 1> descriptorWrites = {};
 	descriptorWrites[0] = FVulkanInitializers::WriteDescriptorSet();
 	descriptorWrites[0].dstSet = descriptorSet;
 	descriptorWrites[0].dstBinding = 0;
 	descriptorWrites[0].dstArrayElement = 0;
-	descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 	descriptorWrites[0].descriptorCount = 1;
 	descriptorWrites[0].pBufferInfo = &bufferInfo;
 
@@ -657,23 +681,26 @@ void FVulkanCursor3D::UpdateCommandBuffers()
 		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 		//vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
 
-		VkDeviceSize offsets = 0;
-		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &vertexBuffer.buffer, &offsets);
+		for (int j = 0; j < vertexBuffers.size(); j++)
+		{
+			VkDeviceSize offsets = 0;
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &vertexBuffers[j].buffer, &offsets);
 
-		//vkCmdDraw(commandBuffers[i], 4, 1, 0, 0);
+			//vkCmdDraw(commandBuffers[i], 4, 1, 0, 0);
 
-		//vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
-		//vkCmdDraw(commandBuffers[i], 3, 1, 3, 0);
+			//vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+			//vkCmdDraw(commandBuffers[i], 3, 1, 3, 0);
 
-		//vkCmdDraw(commandBuffers[i], 3, 1, 1, 0);
+			//vkCmdDraw(commandBuffers[i], 3, 1, 1, 0);
 
-		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+			vkCmdBindIndexBuffer(commandBuffers[i], indexBuffers[j].buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		//vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(scene->mesh->indices.size()), 1, 0, 0, 0);
-		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(scene->mesh->indices.size()), 1, 0, 0, 0);
+			uint32_t offset = j * dynamicAlignment;
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 1, &offset);
 
-
+			//vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(scene->mesh->indices.size()), 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(scene->displayedMeshes[j]->indices.size()), 1, 0, 0, 0);
+		}
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 

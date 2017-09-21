@@ -124,7 +124,7 @@ void FTerrainEditor::Raise(glm::vec3 hitPosition, float maxHeightChange)
 
 glm::vec3 FTerrainEditor::GetHitPosition()
 {
-	scene->position = inputManager->HitPoint;
+	scene->cursor3Dposition = inputManager->HitPoint;
 
 	return glm::vec3(inputManager->HitPoint);
 }

@@ -119,21 +119,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AttachedMesh.cpp" />
-    <ClCompile Include="AttachedVertex.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="BufferCreateInfo.cpp" />
     <ClCompile Include="CameraController.cpp" />
-    <ClCompile Include="Cursor3D.cpp" />
+    <ClCompile Include="MeshCalculator.cpp" />
+    <ClCompile Include="VulkanCursor3D.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="FileCalculator.cpp" />
     <ClCompile Include="FPSTextOverlay.cpp" />
     <ClCompile Include="GeometryCalculator.cpp" />
     <ClCompile Include="TerrainCalculator.cpp" />
     <ClCompile Include="TerrainDisplayManager.cpp" />
-    <ClCompile Include="TerrainDisplayMesh.cpp" />
     <ClCompile Include="TerrainManager.cpp" />
-    <ClCompile Include="TextOverlay.cpp" />
     <ClCompile Include="VulkanModelRenderer.cpp" />
     <ClCompile Include="VulkanScreenGrab.cpp" />
     <ClCompile Include="Particle.cpp" />
@@ -157,7 +154,6 @@
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="QueueFamilyIndices.cpp" />
-    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneCalculator.cpp" />
     <ClCompile Include="SleepCalculator.cpp" />
     <ClCompile Include="VulkanTextOverlay.cpp" />
@@ -202,7 +198,8 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BufferCreateInfo.h" />
     <ClInclude Include="CameraController.h" />
-    <ClInclude Include="Cursor3D.h" />
+    <ClInclude Include="MeshCalculator.h" />
+    <ClInclude Include="VulkanCursor3D.h" />
     <ClInclude Include="Edges.h" />
     <ClInclude Include="Environment.h" />
     <ClInclude Include="FileCalculator.h" />

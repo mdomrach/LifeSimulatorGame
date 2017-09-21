@@ -4,6 +4,7 @@ class FGameManager;
 struct FTerrainDisplayMesh;
 class FMesh;
 struct FTerrainVisibleArea;
+class FScene;
 
 class FTerrainDisplayManager
 {
@@ -23,4 +24,5 @@ private:
 	FTerrainDisplayMesh* terrainDisplayMesh;
 	FMesh* terrain;
 	FTerrainVisibleArea* terrainVisibleArea;
+	FScene* scene;
 };
