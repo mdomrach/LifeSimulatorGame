@@ -12,6 +12,11 @@ int FTerrainCalculator::GetTriangleIndex(int xGrid, int yGrid)
 	return 2 * (xGrid * numberOfQuads + yGrid);
 }
 
+int FTerrainCalculator::GetQuadIndex(int xGrid, int yGrid)
+{
+	return (xGrid * numberOfQuads + yGrid);
+}
+
 //void FTerrainCalculator::CalculateTerrainDisplayMesh(const FVisibleTerainAreas& visibleTerrainAreas, const FTerrain& terrain, FTerrainDisplayMesh& terrainDisplayMesh)
 //{
 //

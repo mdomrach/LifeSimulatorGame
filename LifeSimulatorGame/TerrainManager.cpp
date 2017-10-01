@@ -27,8 +27,7 @@ void FTerrainManager::LoadAssets()
 			float height = (float) (noiseAmplitude * Noise.noise(x * noiseFrequency, y * noiseFrequency));
 
 			FMeshVertex Vertex;
-			//Vertex.pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, height };
-			Vertex.pos = { x - numberOfQuads / 2, y - numberOfQuads / 2, 0 };
+			Vertex.pos = { x, y, 0 };
 			Vertex.normal = glm::vec3(0, 0, 1);
 			terrain->vertices.push_back(Vertex);
 		}

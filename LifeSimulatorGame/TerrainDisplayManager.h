@@ -1,10 +1,13 @@
 #pragma once
+#include <unordered_set>
 
 class FGameManager;
 struct FTerrainDisplayMesh;
 class FMesh;
 struct FTerrainVisibleArea;
 class FScene;
+
+#include <glm/glm.hpp>
 
 class FTerrainDisplayManager
 {
@@ -16,11 +19,11 @@ public:
 
 private:
 	int GetVertexIndex(int xGrid, int yGrid);
-	void LinkTriangleAndVertex(int triangleIndex, int vertexIndex1, int vertexIndex2, int vertexIndex3);
 
 	const int numberOfQuads = 16;
 	const int numberOfVertices = 17;
 
+	FGameManager* gameManager;
 	FTerrainDisplayMesh* terrainDisplayMesh;
 	FMesh* terrain;
 	FTerrainVisibleArea* terrainVisibleArea;

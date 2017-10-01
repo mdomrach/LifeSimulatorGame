@@ -123,6 +123,7 @@
     <ClCompile Include="BufferCreateInfo.cpp" />
     <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="MeshCalculator.cpp" />
+    <ClCompile Include="TerrainDisplayMeshFactory.cpp" />
     <ClCompile Include="VulkanCursor3D.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="FileCalculator.cpp" />
@@ -199,6 +200,7 @@
     <ClInclude Include="BufferCreateInfo.h" />
     <ClInclude Include="CameraController.h" />
     <ClInclude Include="MeshCalculator.h" />
+    <ClInclude Include="TerrainDisplayMeshFactory.h" />
     <ClInclude Include="VulkanCursor3D.h" />
     <ClInclude Include="Edges.h" />
     <ClInclude Include="Environment.h" />

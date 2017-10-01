@@ -4,6 +4,22 @@
 #include "Edges.h"
 #include "Triangles.h"
 
+int FGeometryCalculator::AddVertex(FVertices& vertices)
+{
+	int vertexIndex = vertices.edgeIndices.size();
+	vertices.edgeIndices.push_back(std::vector<int>());
+	vertices.triangleIndices.push_back(std::vector<int>());
+	return vertexIndex;
+}
+
+int FGeometryCalculator::AddEdge(FEdges& edges)
+{
+	int edgeIndex = edges.triangleIndices.size();
+	edges.triangleIndices.push_back(-1);
+	edges.vertexIndices.push_back({ -1, -1 });
+	return edgeIndex;
+}
+
 void FGeometryCalculator::LinkVerticesAndEdge(int vertexIndex1, int vertexIndex2, int edgeIndex, FVertices& vertices, FEdges& edges)
 {
 	vertices.edgeIndices[vertexIndex1].push_back(edgeIndex);
